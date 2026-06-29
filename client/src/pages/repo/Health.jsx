@@ -1,12 +1,8 @@
-import React from 'react';
-
-const Health = () => {
+export default function Health() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Repository Health</h2>
-      <p className="text-muted-foreground">Code quality, issue tracking, and repository health metrics.</p>
+    <div className="text-gray-400 text-sm">
+      <h2 className="text-xl font-semibold text-white mb-4">Repository Health</h2>
+      <p>Health metrics and code quality — coming soon.</p>
     </div>
-  );
-};
-
-export default Health;
+  )
+}

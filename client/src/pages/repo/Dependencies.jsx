@@ -1,12 +1,8 @@
-import React from 'react';
-
-const Dependencies = () => {
+export default function Dependencies() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Dependencies</h2>
-      <p className="text-muted-foreground">Monitor package dependencies and check for updates.</p>
+    <div className="text-gray-400 text-sm">
+      <h2 className="text-xl font-semibold text-white mb-4">Dependencies</h2>
+      <p>Package dependency analysis — coming soon.</p>
     </div>
-  );
-};
-
-export default Dependencies;
+  )
+}

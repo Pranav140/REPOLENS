@@ -1,12 +1,8 @@
-import React from 'react';
-
-const Graph = () => {
+export default function Graph() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Repository Graph</h2>
-      <p className="text-muted-foreground">Interactive code structure and dependency graph visualization.</p>
+    <div className="text-gray-400 text-sm">
+      <h2 className="text-xl font-semibold text-white mb-4">Dependency Graph</h2>
+      <p>Interactive dependency graph — coming soon.</p>
     </div>
-  );
-};
-
-export default Graph;
+  )
+}

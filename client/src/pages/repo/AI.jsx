@@ -1,12 +1,8 @@
-import React from 'react';
-
-const AI = () => {
+export default function AI() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">AI Code Assistant</h2>
-      <p className="text-muted-foreground">Interact with Gemini AI to ask questions about the repository.</p>
+    <div className="text-gray-400 text-sm">
+      <h2 className="text-xl font-semibold text-white mb-4">AI Tools</h2>
+      <p>Gemini-powered analysis tools — coming soon.</p>
     </div>
-  );
-};
-
-export default AI;
+  )
+}

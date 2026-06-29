@@ -1,12 +1,8 @@
-import React from 'react';
-
-const Overview = () => {
+export default function Overview() {
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-2">Repository Overview</h2>
-      <p className="text-muted-foreground">General information, commit activity, and statistics.</p>
+    <div className="text-gray-400 text-sm">
+      <h2 className="text-xl font-semibold text-white mb-4">Overview</h2>
+      <p>Repository overview — coming soon.</p>
     </div>
-  );
-};
-
-export default Overview;
+  )
+}
