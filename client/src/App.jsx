@@ -1,17 +1,45 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import Landing from './pages/Landing'
+import Login from './pages/Login'
+import AuthCallback from './pages/AuthCallback'
+import Dashboard from './pages/Dashboard'
+import RepoLayout from './pages/repo/RepoLayout'
+import Overview from './pages/repo/Overview'
+import Graph from './pages/repo/Graph'
+import Health from './pages/repo/Health'
+import Search from './pages/repo/Search'
+import Security from './pages/repo/Security'
+import AI from './pages/repo/AI'
+import Dependencies from './pages/repo/Dependencies'
 
-function App() {
-  return (
-    <Router>
-      <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
-        <h1 className="text-3xl font-bold">App works</h1>
-      </div>
-      <Routes>
-        {/* Router configuration placeholders */}
-      </Routes>
-    </Router>
-  );
+function PrivateRoute({ children }) {
+  const token = localStorage.getItem('repolens_token')
+  return token ? children : <Navigate to="/login" />
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/dashboard" element={
+          <PrivateRoute><Dashboard /></PrivateRoute>
+        } />
+        <Route path="/repo/:owner/:name" element={
+          <PrivateRoute><RepoLayout /></PrivateRoute>
+        }>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="overview" element={<Overview />} />
+          <Route path="graph" element={<Graph />} />
+          <Route path="health" element={<Health />} />
+          <Route path="search" element={<Search />} />
+          <Route path="security" element={<Security />} />
+          <Route path="ai" element={<AI />} />
+          <Route path="dependencies" element={<Dependencies />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  )
+}

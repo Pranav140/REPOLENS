@@ -9,6 +9,12 @@ const __dirname = dirname(__filename)
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  css: {
+    transformer: 'postcss',
+  },
+  build: {
+    cssMinify: false,
+  },
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),
