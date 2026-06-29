@@ -1,11 +1,25 @@
-import axios from 'axios';
+import axios from 'axios'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true,
-});
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+})
 
-export default api;
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('repolens_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('repolens_token')
+      localStorage.removeItem('repolens_user')
+      window.location.href = '/login'
+    }
+    return Promise.reject(err)
+  }
+)
+
+export default api
