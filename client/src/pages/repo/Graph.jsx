@@ -42,14 +42,15 @@ function GraphInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const [selectedNode, setSelectedNode] = useState(null)
-  const [showDead,  setShowDead]  = useState(true)
-  const [entryOnly, setEntryOnly] = useState(false)
+  const [showDead,    setShowDead]    = useState(true)
+  const [entryOnly,   setEntryOnly]   = useState(false)
   const [traceTarget, setTraceTarget] = useState('')
   const [tracePath,   setTracePath]   = useState([])
   const [traceResult, setTraceResult] = useState(null)
-  const [tracing, setTracing]         = useState(false)
-  const [loading, setLoading]         = useState(true)
-  const [error,   setError]           = useState(null)
+  const [tracing,     setTracing]     = useState(false)
+  const [loading,     setLoading]     = useState(true)
+  const [error,       setError]       = useState(null)
+  const [panelOpen,   setPanelOpen]   = useState(true)
 
   // ── fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -151,6 +152,21 @@ function GraphInner() {
     </div>
   )
 
+  // Empty state — analysis ran but no edges were produced
+  if (!loading && nodes.length === 0) return (
+    <div className="w-full h-[calc(100vh-180px)] flex flex-col items-center justify-center gap-4 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-[#111] border border-[#222] flex items-center justify-center">
+        <span className="text-3xl">🕸️</span>
+      </div>
+      <div>
+        <p className="text-white font-semibold">No dependency data found</p>
+        <p className="text-sm text-gray-500 mt-1">
+          This repo may have no JS/TS files, or the analysis is still running.
+        </p>
+      </div>
+    </div>
+  )
+
   return (
     <div className="w-full h-[calc(100vh-120px)] relative">
       {/* ── Toolbar ────────────────────────────────────────────────────── */}
@@ -180,10 +196,17 @@ function GraphInner() {
         >
           Fit View
         </button>
+        {/* Mobile panel toggle */}
+        <button
+          onClick={() => setPanelOpen(p => !p)}
+          className="text-xs text-gray-400 hover:text-white border border-[#333] rounded px-2 py-1 transition-colors cursor-pointer md:hidden"
+        >
+          {panelOpen ? 'Hide Panel' : 'Panel'}
+        </button>
       </div>
 
-      {/* ── Right panel ───────────────────────────────────────────────── */}
-      {selectedNode && (
+      {/* ── Right panel — hidden on mobile unless panelOpen ──────────── */}
+      {selectedNode && panelOpen && (
         <div className="absolute right-0 top-0 h-full w-72 z-10 bg-[#111] border-l border-[#222] p-4 overflow-y-auto flex flex-col gap-4">
           <div>
             <p className="font-semibold text-white text-sm">{selectedNode.label}</p>
