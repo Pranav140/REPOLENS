@@ -7,6 +7,9 @@ const RepositoryMetrics = require('../models/RepositoryMetrics');
 const githubService = require('../services/githubService');
 const analysisService = require('../services/analysisService');
 const dependencyAdvisorService = require('../services/dependencyAdvisorService');
+const blastRadiusService = require('../services/blastRadiusService');
+const refactorAnalysisService = require('../services/refactorAnalysisService');
+const onboardingEstimateService = require('../services/onboardingEstimateService');
 
 const router = express.Router();
 
@@ -262,6 +265,63 @@ router.get('/:owner/:name/dependencies', async (req, res, next) => {
     if (err.message.includes('package.json')) {
       return res.status(404).json({ error: 'Not Found', message: err.message });
     }
+    next(err);
+  }
+});
+
+// ─── GET /api/repos/:owner/:name/blast-radius ────────────────────────────────
+
+router.get('/:owner/:name/blast-radius', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const results = await blastRadiusService.computeBlastRadius(
+      repo._id, repo.owner, repo.name, req.user.accessToken
+    );
+
+    return res.status(200).json({ results });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/repos/:owner/:name/refactor-analysis ───────────────────────────
+
+router.get('/:owner/:name/refactor-analysis', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const findings = await refactorAnalysisService.analyzeStructure(repo._id);
+
+    return res.status(200).json({ findings });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/repos/:owner/:name/onboarding-estimate ─────────────────────────
+
+router.get('/:owner/:name/onboarding-estimate', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const metrics = await RepositoryMetrics.findOne({ repositoryId: repo._id });
+    const files = await RepositoryFile.find({ repositoryId: repo._id });
+    
+    if (!metrics || files.length === 0) {
+      return res.status(404).json({ error: 'Not Found', message: 'Metrics or files not found' });
+    }
+
+    const estimate = onboardingEstimateService.estimateOnboardingTime(metrics, files);
+
+    return res.status(200).json({ estimate });
+  } catch (err) {
     next(err);
   }
 });
