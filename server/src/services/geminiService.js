@@ -271,6 +271,96 @@ Name specific packages. Be direct.`;
   return callGemini(prompt);
 }
 
+// ─── 7. Refactor Findings ─────────────────────────────────────────────────────
+
+async function explainRefactorFindings(findings, repoName) {
+  const prompt = `
+You are a senior software architect reviewing structural 
+findings from automated graph analysis of "${repoName}".
+
+GOD FILES (high coupling — imports many AND imported by many):
+${findings.godFiles.map(f => 
+  `- ${f.path}: imported by ${f.inDegree} files, imports ${f.outDegree} files`
+).join('\n') || 'None detected'}
+
+FEATURE ENVY (file imports mostly from a folder that isn't its own):
+${findings.featureEnvy.map(f => 
+  `- ${f.path} (lives in ${f.nativeFolder}): ${f.enviousPercent}% of its imports go to ${f.dominantFolder}`
+).join('\n') || 'None detected'}
+
+ORPHANED CLUSTERS (small groups of files mostly isolated from rest of app):
+${findings.orphanedClusters.map(c => 
+  `- Cluster: [${c.files.join(', ')}] — only ${c.externalConnections} connections to the rest of the codebase`
+).join('\n') || 'None detected'}
+
+For each finding category that has results, write ONE specific, 
+actionable refactor recommendation. Reference actual file paths. 
+Skip categories with no findings entirely — do not say "none found."
+
+Format as:
+## God Files
+[recommendation if any]
+
+## Feature Envy  
+[recommendation if any]
+
+## Isolated Clusters
+[recommendation if any]
+
+Be concise — 2-3 sentences per category max.
+`;
+  return callGemini(prompt);
+}
+
+// ─── 8. Onboarding Estimate ───────────────────────────────────────────────────
+
+async function narrateOnboardingEstimate(estimate, repoName) {
+  const prompt = `
+You are writing a brief onboarding time estimate summary 
+for "${repoName}".
+
+Total estimated time: ${estimate.totalDays} days for a 
+mid-level developer to become productive.
+
+Breakdown by area:
+${estimate.breakdown.map(b => 
+  `- ${b.folder}: ${b.days} days (${b.reason})`
+).join('\n')}
+
+Write 2-3 sentences summarizing this estimate in plain English, 
+mentioning the slowest area to ramp up on and why. Be direct 
+and specific, no generic advice.
+`;
+  return callGemini(prompt);
+}
+
+// ─── 9. Breaking Changes ──────────────────────────────────────────────────────
+
+async function explainBreakingChanges(changes, prTitle) {
+  if (changes.length === 0) {
+    return 'No function signature changes detected in this PR.';
+  }
+  
+  const prompt = `
+You are reviewing a pull request titled "${prTitle}" for 
+breaking changes.
+
+Detected function signature changes:
+${changes.map(c => 
+  `- ${c.functionName}() in ${c.file}
+  Old params: (${c.oldParams.join(', ')})
+  New params: (${c.newParams.join(', ')})
+  Called from: ${c.callerFiles.join(', ') || 'no callers found'}
+  Risk: ${c.risk}`
+).join('\n\n')}
+
+Write a clear warning for reviewers (3-4 sentences max) about 
+which call sites may now be broken and need verification. 
+Be specific about file names and function names.
+`;
+  return callGemini(prompt);
+}
+
 module.exports = {
   explainFile,
   generateOnboardingGuide,
@@ -278,4 +368,7 @@ module.exports = {
   analyzePR,
   scoreReadme,
   summarizeDependencyRisks,
+  explainRefactorFindings,
+  narrateOnboardingEstimate,
+  explainBreakingChanges,
 };
