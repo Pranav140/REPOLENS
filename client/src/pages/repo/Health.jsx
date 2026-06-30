@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table'
 import { Skeleton } from '../../components/ui/skeleton'
 import { Alert } from '../../components/ui/alert'
+import { AlertOctagon, ArrowRightLeft, GitBranch } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 import api from '../../api/api'
 
 function getStatus(v, good, warn) {
@@ -54,6 +56,11 @@ export default function Health() {
   const [hotspots, setHotspots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const [refactorFindings, setRefactorFindings] = useState(null)
+  const [refactorLoading, setRefactorLoading] = useState(false)
+  const [refactorExplanation, setRefactorExplanation] = useState(null)
+  const [explanationLoading, setExplanationLoading] = useState(false)
 
   useEffect(() => {
     async function go() {
@@ -176,6 +183,136 @@ export default function Health() {
           </TableBody>
         </Table>
         {hotspots.length===0&&<p className="text-sm text-gray-600 text-center py-4">No hotspot data</p>}
+      </Card>
+
+      {/* SECTION 5 — Structural Refactor Suggestions */}
+      <Card title="Structural Refactor Suggestions">
+        {!refactorFindings ? (
+          <div className="flex items-center justify-between p-4 bg-[#161616] rounded-lg border border-[#333]">
+            <span className="text-sm text-gray-300">Detect structural issues like god files, feature envy, and isolated clusters</span>
+            <button
+              onClick={async () => {
+                setRefactorLoading(true)
+                try {
+                  const res = await api.get(`/api/repos/${owner}/${name}/refactor-analysis`)
+                  setRefactorFindings(res.data.findings)
+                } catch (e) {
+                  setError(e.response?.data?.message || 'Refactor analysis failed')
+                } finally { setRefactorLoading(false) }
+              }}
+              disabled={refactorLoading}
+              className="px-4 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-sm text-white transition-colors disabled:opacity-50 cursor-pointer"
+            >
+              {refactorLoading ? 'Analyzing...' : 'Analyze Structure'}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6 mt-4">
+            {refactorFindings.godFiles?.length === 0 && refactorFindings.featureEnvy?.length === 0 && refactorFindings.orphanedClusters?.length === 0 && (
+              <p className="text-sm text-green-400">No structural issues detected — your architecture looks clean</p>
+            )}
+
+            {refactorFindings.godFiles?.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <AlertOctagon size={16} className="text-orange-500" />
+                  <h4 className="text-sm font-semibold text-white">God Files</h4>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-[#222] hover:bg-transparent">
+                      <TableHead className="text-gray-500">File</TableHead>
+                      <TableHead className="text-gray-500 text-right">Imported By</TableHead>
+                      <TableHead className="text-gray-500 text-right">Imports</TableHead>
+                      <TableHead className="text-gray-500 text-right">Total Coupling</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {refactorFindings.godFiles.map(g => (
+                      <TableRow key={g.path} className="border-[#222] hover:bg-[#161616] text-sm">
+                        <TableCell className="font-mono text-xs text-gray-300 truncate max-w-xs">{g.path}</TableCell>
+                        <TableCell className="text-right text-gray-400">{g.inDegree}</TableCell>
+                        <TableCell className="text-right text-gray-400">{g.outDegree}</TableCell>
+                        <TableCell className="text-right font-bold text-orange-400">{g.totalCoupling}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {refactorFindings.featureEnvy?.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <ArrowRightLeft size={16} className="text-blue-400" />
+                  <h4 className="text-sm font-semibold text-white">Feature Envy</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {refactorFindings.featureEnvy.map(f => (
+                    <div key={f.path} className="p-3 bg-[#161616] border border-[#222] rounded-lg">
+                      <p className="text-xs text-gray-300">
+                        <span className="font-mono text-white">{f.path}</span> lives in <span className="font-mono text-blue-300">{f.nativeFolder}</span> but <span className="font-bold text-orange-400">{f.enviousPercent}%</span> of its imports go to <span className="font-mono text-blue-300">{f.dominantFolder}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {refactorFindings.orphanedClusters?.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <GitBranch size={16} className="text-purple-400" />
+                  <h4 className="text-sm font-semibold text-white">Isolated Clusters</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {refactorFindings.orphanedClusters.map((c, i) => (
+                    <div key={i} className="p-4 bg-[#161616] border border-[#222] rounded-lg space-y-3">
+                      <div className="flex flex-wrap gap-1.5">
+                        {c.nodes.map(n => (
+                          <span key={n} className="px-2 py-0.5 bg-[#222] text-xs text-gray-400 rounded-full font-mono">{n}</span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500">{c.externalConnections} connections to rest of codebase</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(refactorFindings.godFiles?.length > 0 || refactorFindings.featureEnvy?.length > 0 || refactorFindings.orphanedClusters?.length > 0) && (
+              <div className="pt-4 border-t border-[#222]">
+                {!refactorExplanation ? (
+                  <div className="flex items-center justify-between bg-[#161616] p-4 rounded-lg border border-[#333]">
+                    <span className="text-sm text-gray-300">Get specific refactor recommendations</span>
+                    <button
+                      onClick={async () => {
+                        setExplanationLoading(true)
+                        try {
+                          const res = await api.post(`/api/ai/${owner}/${name}/explain-refactor`, { findings: refactorFindings })
+                          setRefactorExplanation(res.data.explanation)
+                        } catch (e) {
+                          setError('Failed to explain findings')
+                        } finally { setExplanationLoading(false) }
+                      }}
+                      disabled={explanationLoading}
+                      className="px-4 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-sm text-white transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {explanationLoading ? 'Gemini is thinking...' : 'Explain These Findings'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 p-5 bg-[#0a0a0a] rounded-lg border border-[#222]">
+                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 prose-headings:text-white prose-p:text-gray-300">
+                      <ReactMarkdown>{refactorExplanation}</ReactMarkdown>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-4">Powered by Gemini ✦</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </Card>
     </div>
   )
