@@ -169,6 +169,37 @@ async function getPRFiles(owner, repo, prNumber, token) {
   }
 }
 
+/**
+ * Fetch the number of commits that touched a specific file.
+ */
+async function getFileCommitFrequency(owner, repo, filePath, token) {
+  try {
+    const { data } = await githubAPI.get(
+      `/repos/${owner}/${repo}/commits?path=${encodeURIComponent(filePath)}&per_page=30`,
+      authHeader(token)
+    );
+    return Array.isArray(data) ? data.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch a file's content at a specific ref (branch, tag, or commit SHA).
+ */
+async function getFileContentAtRef(owner, repo, filePath, ref, token) {
+  try {
+    const { data } = await githubAPI.get(
+      `/repos/${owner}/${repo}/contents/${filePath}`,
+      { ...authHeader(token), params: { ref } }
+    );
+    if (data.size > 50000) return null;
+    return Buffer.from(data.content, 'base64').toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
 module.exports = {
   getRepository,
   getFileTree,
@@ -176,4 +207,6 @@ module.exports = {
   getRecentCommits,
   getPullRequest,
   getPRFiles,
+  getFileCommitFrequency,
+  getFileContentAtRef,
 };
