@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const { connectDB } = require('./config/db');
 const routes = require('./routes');
 const errorHandler = require('./middlewares/errorHandler');
+const requestLogger = require('./middlewares/requestLogger');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,10 +15,11 @@ const PORT = process.env.PORT || 5000;
 connectDB();
 
 // Middlewares
+app.use(requestLogger);
 app.use(helmet());
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  credentials: true,
 }));
 app.use(express.json());
 
