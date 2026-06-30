@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import ReactFlow, {
   Controls, MiniMap, Background,
   useNodesState, useEdgesState, useReactFlow,
@@ -34,6 +34,7 @@ const NODE_TYPES = { fileNode: FileNode }
 function GraphInner() {
   const { owner, name } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { fitView } = useReactFlow()
 
   const [rawFiles, setRawFiles]     = useState([])
@@ -79,6 +80,12 @@ function GraphInner() {
         const laid = applyLayout(rfNodes, rfEdges)
         setNodes(laid)
         setEdges(rfEdges)
+        
+        const highlightPath = searchParams.get('highlight')
+        if (highlightPath) {
+          const highlightNode = rfNodes.find(n => n.id === highlightPath)
+          if (highlightNode) setSelectedNode(highlightNode.data)
+        }
       })
       .catch(e => setError(e.response?.data?.message || 'Failed to load graph'))
       .finally(() => setLoading(false))
