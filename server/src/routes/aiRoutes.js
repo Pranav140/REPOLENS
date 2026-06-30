@@ -6,6 +6,7 @@ const RepositoryMetrics = require('../models/RepositoryMetrics');
 const githubService = require('../services/githubService');
 const graphService = require('../services/graphService');
 const geminiService = require('../services/geminiService');
+const breakingChangeService = require('../services/breakingChangeService');
 
 const router = express.Router();
 
@@ -222,6 +223,83 @@ router.post('/:owner/:name/dependency-summary', async (req, res, next) => {
     const summary = await geminiService.summarizeDependencyRisks(dependencies);
 
     return res.status(200).json({ summary });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/ai/:owner/:name/explain-refactor ─────────────────────────────
+
+router.post('/:owner/:name/explain-refactor', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const { findings } = req.body;
+
+    if (!findings) {
+      return res.status(400).json({ error: 'Bad Request', message: 'findings is required' });
+    }
+
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const explanation = await geminiService.explainRefactorFindings(findings, repo.name);
+
+    return res.status(200).json({ explanation });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/ai/:owner/:name/narrate-onboarding ───────────────────────────
+
+router.post('/:owner/:name/narrate-onboarding', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const { estimate } = req.body;
+
+    if (!estimate) {
+      return res.status(400).json({ error: 'Bad Request', message: 'estimate is required' });
+    }
+
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const narration = await geminiService.narrateOnboardingEstimate(estimate, repo.name);
+
+    return res.status(200).json({ narration });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ─── POST /api/ai/:owner/:name/breaking-changes ─────────────────────────────
+
+router.post('/:owner/:name/breaking-changes', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const { prNumber } = req.body;
+
+    if (!prNumber) {
+      return res.status(400).json({ error: 'Bad Request', message: 'prNumber is required' });
+    }
+
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const token = req.user.accessToken;
+
+    const [pr, prFiles] = await Promise.all([
+      githubService.getPullRequest(owner, name, prNumber, token),
+      githubService.getPRFiles(owner, name, prNumber, token)
+    ]);
+
+    const changes = await breakingChangeService.detectBreakingChanges(
+      repo._id, repo.owner, repo.name, prNumber, prFiles, token
+    );
+
+    const explanation = await geminiService.explainBreakingChanges(changes, pr.title);
+
+    return res.status(200).json({ changes, explanation });
   } catch (err) {
     next(err);
   }
