@@ -17,6 +17,8 @@ const NAV_LINKS = [
   { to: 'security',     label: 'Security'      },
   { to: 'ai',           label: 'AI Tools'      },
   { to: 'dependencies', label: 'Dependencies'  },
+  { to: 'blast-radius', label: 'Blast Radius'  },
+  { to: 'onboarding-estimate', label: 'Onboarding Time' },
 ]
 
 const STATUS_STYLES = {

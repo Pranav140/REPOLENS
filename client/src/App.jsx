@@ -11,6 +11,8 @@ import Search from './pages/repo/Search'
 import Security from './pages/repo/Security'
 import AI from './pages/repo/AI'
 import Dependencies from './pages/repo/Dependencies'
+import BlastRadius from './pages/repo/BlastRadius'
+import OnboardingEstimate from './pages/repo/OnboardingEstimate'
 
 function PrivateRoute({ children }) {
   const token = localStorage.getItem('repolens_token')
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="security" element={<Security />} />
           <Route path="ai" element={<AI />} />
           <Route path="dependencies" element={<Dependencies />} />
+          <Route path="blast-radius" element={<BlastRadius />} />
+          <Route path="onboarding-estimate" element={<OnboardingEstimate />} />
         </Route>
       </Routes>
     </BrowserRouter>
