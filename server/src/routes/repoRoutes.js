@@ -6,6 +6,7 @@ const RepositoryEdge = require('../models/RepositoryEdge');
 const RepositoryMetrics = require('../models/RepositoryMetrics');
 const githubService = require('../services/githubService');
 const analysisService = require('../services/analysisService');
+const dependencyAdvisorService = require('../services/dependencyAdvisorService');
 
 const router = express.Router();
 
@@ -232,6 +233,35 @@ router.post('/:owner/:name/reanalyze', async (req, res, next) => {
 
     return res.status(200).json({ message: 'Reanalysis started' });
   } catch (err) {
+    next(err);
+  }
+});
+
+// ─── GET /api/repos/:owner/:name/dependencies ────────────────────────────────
+
+router.get('/:owner/:name/dependencies', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const repo = await findRepo(owner, name, req.user._id, res);
+    if (!repo) return;
+
+    const result = await dependencyAdvisorService.analyzeDependencies(repo._id);
+
+    const high     = result.filter(d => d.riskLevel === 'high').length;
+    const medium   = result.filter(d => d.riskLevel === 'medium').length;
+    const low      = result.filter(d => d.riskLevel === 'low').length;
+    const withCVEs = result.filter(d => d.cveCount > 0).length;
+    const outdated = result.filter(d => d.isOutdated).length;
+
+    return res.status(200).json({
+      dependencies: result,
+      summary: { total: result.length, high, medium, low, withCVEs, outdated },
+    });
+  } catch (err) {
+    // Surface user-friendly errors (no package.json etc.)
+    if (err.message.includes('package.json')) {
+      return res.status(404).json({ error: 'Not Found', message: err.message });
+    }
     next(err);
   }
 });
