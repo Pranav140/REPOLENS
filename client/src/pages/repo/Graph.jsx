@@ -1,8 +1,296 @@
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import ReactFlow, {
+  Controls, MiniMap, Background,
+  useNodesState, useEdgesState, useReactFlow,
+  ReactFlowProvider,
+} from 'reactflow'
+import 'reactflow/dist/style.css'
+import dagre from 'dagre'
+import { Switch } from '../../components/ui/switch'
+import { Skeleton } from '../../components/ui/skeleton'
+import FileNode from '../../components/shared/FileNode'
+import api from '../../api/api'
+
+// ── dagre layout ─────────────────────────────────────────────────────────────
+
+function applyLayout(nodes, edges) {
+  const g = new dagre.graphlib.Graph()
+  g.setGraph({ rankdir: 'LR', nodesep: 60, ranksep: 100 })
+  g.setDefaultEdgeLabel(() => ({}))
+  nodes.forEach(n => g.setNode(n.id, { width: 160, height: 60 }))
+  edges.forEach(e => g.setEdge(e.source, e.target))
+  dagre.layout(g)
+  return nodes.map(n => {
+    const pos = g.node(n.id)
+    return { ...n, position: { x: pos.x - 80, y: pos.y - 30 } }
+  })
+}
+
+const NODE_TYPES = { fileNode: FileNode }
+
+// ── inner component (needs ReactFlowProvider context) ─────────────────────────
+
+function GraphInner() {
+  const { owner, name } = useParams()
+  const navigate = useNavigate()
+  const { fitView } = useReactFlow()
+
+  const [rawFiles, setRawFiles]     = useState([])
+  const [rawEdges, setRawEdges]     = useState([])
+  const [nodes, setNodes, onNodesChange] = useNodesState([])
+  const [edges, setEdges, onEdgesChange] = useEdgesState([])
+
+  const [selectedNode, setSelectedNode] = useState(null)
+  const [showDead,  setShowDead]  = useState(true)
+  const [entryOnly, setEntryOnly] = useState(false)
+  const [traceTarget, setTraceTarget] = useState('')
+  const [tracePath,   setTracePath]   = useState([])
+  const [traceResult, setTraceResult] = useState(null)
+  const [tracing, setTracing]         = useState(false)
+  const [loading, setLoading]         = useState(true)
+  const [error,   setError]           = useState(null)
+
+  // ── fetch ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    api.get(`/api/graph/${owner}/${name}`)
+      .then(res => {
+        const files    = res.data.nodes || []
+        const apiEdges = res.data.edges || []
+        setRawFiles(files)
+        setRawEdges(apiEdges)
+
+        const rfNodes = files.map(f => ({
+          id: f.path,
+          type: 'fileNode',
+          position: { x: 0, y: 0 },
+          data: {
+            label: f.name, path: f.path,
+            language: f.language, isDead: f.isDead,
+            isEntry: f.isEntry, complexity: f.complexityScore ?? 0,
+          },
+        }))
+        const rfEdges = apiEdges.map(e => ({
+          id: `${e.source}->${e.target}`,
+          source: e.source, target: e.target,
+          style: { stroke: '#444', strokeWidth: 1 },
+        }))
+        const laid = applyLayout(rfNodes, rfEdges)
+        setNodes(laid)
+        setEdges(rfEdges)
+      })
+      .catch(e => setError(e.response?.data?.message || 'Failed to load graph'))
+      .finally(() => setLoading(false))
+  }, [owner, name]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── filtered nodes + edges ─────────────────────────────────────────────────
+  const filteredNodes = useMemo(() => {
+    let n = nodes
+    if (!showDead) n = n.filter(node => !node.data.isDead)
+    if (entryOnly) n = n.filter(node => node.data.isEntry)
+
+    const traceSet = new Set(tracePath)
+    return n.map(node => ({
+      ...node,
+      style: traceSet.has(node.id)
+        ? { border: '2px solid #3b82f6', boxShadow: '0 0 8px #3b82f6' }
+        : undefined,
+    }))
+  }, [nodes, showDead, entryOnly, tracePath])
+
+  const filteredEdges = useMemo(() => {
+    const nodeIds = new Set(filteredNodes.map(n => n.id))
+    return edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+  }, [edges, filteredNodes])
+
+  // ── trace ──────────────────────────────────────────────────────────────────
+  async function handleTrace() {
+    if (!selectedNode || !traceTarget.trim()) return
+    setTracing(true)
+    setTraceResult(null)
+    setTracePath([])
+    try {
+      const res = await api.get(`/api/graph/${owner}/${name}/trace`, {
+        params: { from: selectedNode.path, to: traceTarget.trim() },
+      })
+      if (res.data.found) {
+        setTracePath(res.data.path)
+        setTraceResult({ found: true, path: res.data.path })
+      } else {
+        setTraceResult({ found: false })
+      }
+    } catch { setTraceResult({ found: false }) }
+    finally { setTracing(false) }
+  }
+
+  const onNodeClick = useCallback((_, node) => {
+    setSelectedNode(node.data)
+    setTracePath([])
+    setTraceResult(null)
+    setTraceTarget('')
+  }, [])
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNode(null)
+    setTracePath([])
+    setTraceResult(null)
+  }, [])
+
+  if (loading) return (
+    <div className="w-full h-[calc(100vh-120px)] flex items-center justify-center">
+      <div className="space-y-3 w-3/4">
+        <Skeleton className="h-8 w-64 bg-[#1e1e1e]" />
+        <Skeleton className="h-full w-full bg-[#1e1e1e] rounded-xl" style={{ height: 400 }} />
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="p-4 text-red-400 text-sm border border-red-500/30 bg-red-500/10 rounded-xl">
+      {error}
+    </div>
+  )
+
+  return (
+    <div className="w-full h-[calc(100vh-120px)] relative">
+      {/* ── Toolbar ────────────────────────────────────────────────────── */}
+      <div className="absolute top-4 left-4 z-10 rounded-xl border border-[#222] bg-[#111]/90 backdrop-blur p-3 flex items-center gap-4 text-sm shadow-lg">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <Switch
+            checked={showDead}
+            onCheckedChange={setShowDead}
+            className="scale-75"
+          />
+          <span className="text-gray-300">Dead Files</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <Switch
+            checked={entryOnly}
+            onCheckedChange={setEntryOnly}
+            className="scale-75"
+          />
+          <span className="text-gray-300">Entry Only</span>
+        </label>
+        <span className="text-gray-600 text-xs border-l border-[#333] pl-4">
+          {filteredNodes.length} nodes · {filteredEdges.length} edges
+        </span>
+        <button
+          onClick={() => fitView({ padding: 0.1, duration: 400 })}
+          className="text-xs text-gray-400 hover:text-white border border-[#333] rounded px-2 py-1 transition-colors cursor-pointer"
+        >
+          Fit View
+        </button>
+      </div>
+
+      {/* ── Right panel ───────────────────────────────────────────────── */}
+      {selectedNode && (
+        <div className="absolute right-0 top-0 h-full w-72 z-10 bg-[#111] border-l border-[#222] p-4 overflow-y-auto flex flex-col gap-4">
+          <div>
+            <p className="font-semibold text-white text-sm">{selectedNode.label}</p>
+            <p className="text-xs text-gray-400 break-all mt-1">{selectedNode.path}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {selectedNode.language && (
+              <span className="text-xs px-2 py-0.5 rounded-full border border-[#333] text-gray-400">
+                {selectedNode.language}
+              </span>
+            )}
+            <span className="text-xs px-2 py-0.5 rounded-full border border-[#333] text-gray-400">
+              complexity {selectedNode.complexity}
+            </span>
+            {selectedNode.isDead && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Dead</span>
+            )}
+            {selectedNode.isEntry && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Entry</span>
+            )}
+          </div>
+
+          <div className="border-t border-[#222]" />
+
+          {/* Trace */}
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-gray-400">Trace Import Chain</p>
+            <input
+              type="text"
+              placeholder="Target file path..."
+              value={traceTarget}
+              onChange={e => setTraceTarget(e.target.value)}
+              className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-[#333] text-white placeholder:text-gray-600 focus:outline-none focus:border-[#444]"
+            />
+            <button
+              onClick={handleTrace}
+              disabled={tracing || !traceTarget.trim()}
+              className="w-full py-1.5 rounded-lg bg-[#1e1e1e] border border-[#333] text-xs text-gray-300
+                         hover:text-white hover:border-[#444] transition-colors cursor-pointer
+                         disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {tracing ? 'Tracing…' : 'Trace'}
+            </button>
+
+            {traceResult && (
+              traceResult.found ? (
+                <div className="space-y-1">
+                  <p className="text-xs text-green-400">Path found ({traceResult.path.length} hops)</p>
+                  <div className="font-mono text-[10px] text-gray-400 space-y-0.5">
+                    {traceResult.path.map((p, i) => (
+                      <div key={p}>
+                        {i > 0 && <span className="text-gray-600 mr-1">→</span>}
+                        <span className="break-all">{p.split('/').pop()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-red-400">No connection found</p>
+              )
+            )}
+          </div>
+
+          <div className="border-t border-[#222]" />
+
+          <button
+            onClick={() => navigate(`/repo/${owner}/${name}/ai`)}
+            className="py-2 rounded-lg bg-[#1e1e1e] border border-[#333] text-xs text-gray-300
+                       hover:text-white hover:border-[#444] transition-colors cursor-pointer"
+          >
+            ✨ Explain with AI
+          </button>
+        </div>
+      )}
+
+      {/* ── ReactFlow canvas ──────────────────────────────────────────── */}
+      <ReactFlow
+        nodes={filteredNodes}
+        edges={filteredEdges}
+        nodeTypes={NODE_TYPES}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        fitView
+        minZoom={0.05}
+        maxZoom={2}
+        style={{ background: '#0a0a0a' }}
+      >
+        <Controls className="[&>button]:bg-[#111] [&>button]:border-[#333] [&>button]:text-gray-400" />
+        <MiniMap
+          nodeColor={n => n.data?.isDead ? '#7f1d1d' : '#1d4ed8'}
+          maskColor="rgba(0,0,0,0.85)"
+          style={{ background: '#111', border: '1px solid #222' }}
+        />
+        <Background color="#1a1a1a" gap={24} variant="dots" />
+      </ReactFlow>
+    </div>
+  )
+}
+
+// ── exported wrapper with provider ───────────────────────────────────────────
 export default function Graph() {
   return (
-    <div className="text-gray-400 text-sm">
-      <h2 className="text-xl font-semibold text-white mb-4">Dependency Graph</h2>
-      <p>Interactive dependency graph — coming soon.</p>
-    </div>
+    <ReactFlowProvider>
+      <GraphInner />
+    </ReactFlowProvider>
   )
 }
