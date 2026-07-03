@@ -128,6 +128,14 @@ export default function Overview() {
                 </Badge>
               ))}
             </div>
+          ) : langData.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {langData.map((l) => (
+                <Badge key={l.name} variant="outline" className="border-[#333] text-gray-300 text-xs">
+                  {l.name}
+                </Badge>
+              ))}
+            </div>
           ) : (
             <p className="text-sm text-gray-600">Not detected</p>
           )}
