@@ -173,7 +173,12 @@ async function analyzeRepository(repositoryId, userId) {
       }
     }
 
-    // ── STEP 6: Circular dependency detection ──────────────────────────────
+    // ── STEP 6: Security scan ─────────────────────────────────────────────
+    const securityService = require('./securityService');
+    const securityIssues = await securityService.scanRepository(repositoryId);
+    const securityIssueCount = securityIssues.length;
+
+    // ── STEP 7: Circular dependency detection ──────────────────────────────
     const adjacencyList = {};
     for (const edge of allEdges) {
       if (!adjacencyList[edge.source]) adjacencyList[edge.source] = [];
@@ -181,14 +186,14 @@ async function analyzeRepository(repositoryId, userId) {
     }
     const circularDeps = detectCycles(adjacencyList);
 
-    // ── STEP 7: Tech stack ─────────────────────────────────────────────────
+    // ── STEP 8: Tech stack ─────────────────────────────────────────────────
     const pkgFile = allFiles.find((f) => f.name === 'package.json');
     const techStack = parserService.detectTechStack(
       allFiles.map((f) => f.path),
       pkgFile?.content || null
     );
 
-    // ── STEP 8: Language distribution ─────────────────────────────────────
+    // ── STEP 9: Language distribution ─────────────────────────────────────
     const languages = {};
     allFiles.forEach((f) => {
       if (f.language && f.language !== 'Unknown') {
@@ -196,7 +201,7 @@ async function analyzeRepository(repositoryId, userId) {
       }
     });
 
-    // ── STEP 9: Aggregate metrics ──────────────────────────────────────────
+    // ── STEP 10: Aggregate metrics ──────────────────────────────────────────
     // Re-read files so isDead flags are fresh
     const freshFiles = await RepositoryFile.find({ repositoryId });
 
@@ -256,10 +261,10 @@ async function analyzeRepository(repositoryId, userId) {
       techStack,
       languages,
       documentationScore: docScore,
-      securityIssues: 0,
+      securityIssues: securityIssueCount,
     });
 
-    // ── STEP 10: Mark complete ─────────────────────────────────────────────
+    // ── STEP 11: Mark complete ─────────────────────────────────────────────
     repo.status = 'completed';
     repo.analyzedAt = new Date();
     await repo.save();

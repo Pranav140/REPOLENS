@@ -1,11 +1,29 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { AlertTriangle, Info, Star, GitFork, GitCommitHorizontal } from 'lucide-react'
+import { useParams, Link } from 'react-router-dom'
+import { AlertTriangle, Info, Star, GitFork, GitCommitHorizontal, ExternalLink, Calendar, User, FileText, TrendingUp } from 'lucide-react'
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer } from 'recharts'
 import { Badge } from '../../components/ui/badge'
 import { Skeleton } from '../../components/ui/skeleton'
 import { Alert } from '../../components/ui/alert'
 import api from '../../api/api'
+
+const TECH_COLORS = {
+  react: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  vue: 'bg-green-500/10 text-green-400 border-green-500/30',
+  angular: 'bg-red-500/10 text-red-400 border-red-500/30',
+  next: 'bg-gray-500/10 text-gray-300 border-gray-500/30',
+  express: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  nestjs: 'bg-red-500/10 text-red-400 border-red-500/30',
+  fastify: 'bg-gray-500/10 text-gray-300 border-gray-500/30',
+  prisma: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30',
+  mongoose: 'bg-green-500/10 text-green-400 border-green-500/30',
+  typeorm: 'bg-orange-500/10 text-orange-400 border-orange-500/30',
+  jest: 'bg-pink-500/10 text-pink-400 border-pink-500/30',
+  vitest: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+  tailwindcss: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30',
+  typescript: 'bg-blue-500/10 text-blue-400 border-blue-500/30',
+  javascript: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30',
+}
 
 const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
 
@@ -104,6 +122,7 @@ export default function Overview() {
         <StatCard
           label="Circular Deps"
           value={metrics?.circularDependencies ?? 0}
+          suffix="Import cycles detected"
           icon={
             (metrics?.circularDependencies ?? 0) > 0
               ? <AlertTriangle size={18} className="text-orange-400" />
@@ -122,19 +141,25 @@ export default function Overview() {
         <SectionCard title="Tech Stack">
           {metrics?.techStack?.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {metrics.techStack.map((t) => (
-                <Badge key={t} variant="outline" className="border-[#333] text-gray-300 text-xs">
-                  {t}
-                </Badge>
-              ))}
+              {metrics.techStack.map((t) => {
+                const colorClass = TECH_COLORS[t.toLowerCase()] || 'border-[#333] text-gray-300'
+                return (
+                  <Badge key={t} variant="outline" className={`${colorClass} text-xs font-medium`}>
+                    {t}
+                  </Badge>
+                )
+              })}
             </div>
           ) : langData.length > 0 ? (
             <div className="flex flex-wrap gap-2">
-              {langData.map((l) => (
-                <Badge key={l.name} variant="outline" className="border-[#333] text-gray-300 text-xs">
-                  {l.name}
-                </Badge>
-              ))}
+              {langData.map((l) => {
+                const colorClass = TECH_COLORS[l.name.toLowerCase()] || 'border-[#333] text-gray-300'
+                return (
+                  <Badge key={l.name} variant="outline" className={`${colorClass} text-xs font-medium`}>
+                    {l.name}
+                  </Badge>
+                )
+              })}
             </div>
           ) : (
             <p className="text-sm text-gray-600">Not detected</p>
@@ -178,13 +203,23 @@ export default function Overview() {
             {repo?.description && (
               <p className="text-gray-400 leading-relaxed">{repo.description}</p>
             )}
-            <div className="flex items-center gap-4 text-gray-500">
-              <span className="flex items-center gap-1">
-                <Star size={13} /> {repo?.stars ?? 0}
+            <div className="flex items-center gap-4 text-gray-500 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <Star size={14} /> {repo?.stars ?? 0}
               </span>
-              <span className="flex items-center gap-1">
-                <GitFork size={13} /> {repo?.forks ?? 0}
+              <span className="flex items-center gap-1.5">
+                <GitFork size={14} /> {repo?.forks ?? 0}
               </span>
+              {repo?.fullName && (
+                <a
+                  href={`https://github.com/${repo.fullName}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  <ExternalLink size={13} /> View on GitHub
+                </a>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {repo?.language && (
@@ -199,13 +234,15 @@ export default function Overview() {
               </span>
             </div>
             {repo?.analyzedAt && (
-              <p className="text-xs text-gray-600">
-                Last analyzed:{' '}
-                {new Date(repo.analyzedAt).toLocaleString(undefined, {
-                  month: 'short', day: 'numeric', year: 'numeric',
-                  hour: '2-digit', minute: '2-digit',
-                })}
-              </p>
+              <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                <Calendar size={12} />
+                <span>
+                  Analyzed {new Date(repo.analyzedAt).toLocaleString(undefined, {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit',
+                  })}
+                </span>
+              </div>
             )}
           </div>
         </SectionCard>
@@ -240,21 +277,66 @@ export default function Overview() {
           <p className="text-sm text-gray-600">No commit data</p>
         ) : (
           <div className="space-y-3">
-            {commits.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 text-sm">
-                <GitCommitHorizontal size={14} className="text-gray-600 mt-0.5 shrink-0" />
-                <span className="font-mono text-xs text-blue-400 shrink-0 mt-0.5">
-                  {(c.sha || '').slice(0, 7)}
-                </span>
-                <span className="text-gray-300 truncate flex-1">
-                  {(c.message || '').slice(0, 80)}
-                </span>
-                <span className="text-gray-600 text-xs shrink-0 hidden sm:block">{c.author}</span>
-                <span className="text-gray-700 text-xs shrink-0 hidden md:block">
-                  {c.date ? new Date(c.date).toLocaleDateString() : ''}
-                </span>
-              </div>
-            ))}
+            {commits.map((c, i) => {
+              const additions = c.stats?.additions ?? 0
+              const deletions = c.stats?.deletions ?? 0
+              const fileCount = c.files?.length ?? 0
+              
+              return (
+                <div key={i} className="group rounded-lg border border-[#222] hover:border-[#333] transition-colors p-3">
+                  <div className="flex items-start gap-3">
+                    <GitCommitHorizontal size={14} className="text-gray-600 mt-1 shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-start gap-2 justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-300 leading-relaxed">
+                            {(c.message || '').split('\n')[0]}
+                          </p>
+                          {c.message && c.message.includes('\n') && (
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              {c.message.split('\n').slice(1).join(' ').trim()}
+                            </p>
+                          )}
+                        </div>
+                        <a
+                          href={`https://github.com/${repo.fullName}/commit/${c.sha}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-xs text-blue-400 hover:text-blue-300 shrink-0"
+                        >
+                          {(c.sha || '').slice(0, 7)}
+                        </a>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs flex-wrap">
+                        <div className="flex items-center gap-1.5 text-gray-500">
+                          <User size={11} />
+                          <span>{c.author || 'Unknown'}</span>
+                        </div>
+                        {c.date && (
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <Calendar size={11} />
+                            <span>{new Date(c.date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {fileCount > 0 && (
+                          <div className="flex items-center gap-1.5 text-gray-600">
+                            <FileText size={11} />
+                            <span>{fileCount} {fileCount === 1 ? 'file' : 'files'}</span>
+                          </div>
+                        )}
+                        {(additions > 0 || deletions > 0) && (
+                          <div className="flex items-center gap-2 text-xs">
+                            {additions > 0 && <span className="text-green-400">+{additions}</span>}
+                            {deletions > 0 && <span className="text-red-400">-{deletions}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </SectionCard>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Flame } from 'lucide-react'
+import { Flame, ExternalLink, ChevronRight, GitBranch } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '../../api/api'
 
@@ -79,33 +79,44 @@ export default function BlastRadius() {
           return (
             <div
               key={file.path}
-              onClick={() => navigate(`../graph?highlight=${encodeURIComponent(file.path)}`)}
-              className={`rounded-xl border ${borderClass} bg-[#111] p-5 flex items-center gap-4 cursor-pointer hover:bg-[#161616] transition-colors`}
+              className={`group rounded-xl border ${borderClass} bg-[#111] p-5 flex items-center gap-4 transition-all hover:bg-[#161616] hover:border-orange-500/30 hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]`}
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1.5">
+              <div className="flex-1 min-w-0 space-y-3">
+                <div className="flex items-center gap-2">
                   <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${isTop3 ? 'bg-orange-500 text-white' : 'bg-[#333] text-gray-300'}`}>
                     #{idx + 1}
                   </span>
                   <span className="font-mono text-sm text-gray-200 truncate">{file.path}</span>
                 </div>
-                <p className="text-sm text-gray-400 mb-3 truncate">{file.reason}</p>
+                
+                <p className="text-sm text-gray-400 leading-relaxed">{file.reason}</p>
+                
                 <div className="flex flex-wrap gap-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400 flex items-center gap-1.5">
+                    <GitBranch size={11} />
                     {file.dependentCount} dependents
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
                     {file.entryPointsAffected} entry points
                   </span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
                     {file.commitFrequency} recent commits
                   </span>
                 </div>
+
+                <button
+                  onClick={() => navigate(`../graph?highlight=${encodeURIComponent(file.path)}`)}
+                  className="mt-2 flex items-center gap-2 text-xs text-blue-400 hover:text-blue-300 transition-colors group/btn"
+                >
+                  <ExternalLink size={13} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                  <span>View dependency graph</span>
+                  <ChevronRight size={13} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                </button>
               </div>
               
-              <div className="shrink-0 flex flex-col items-center justify-center w-24 border-l border-[#222] pl-4">
-                <span className={`text-4xl font-bold ${scoreColor}`}>{file.score}</span>
-                <span className="text-xs text-gray-500 uppercase mt-1 tracking-wider">{file.riskLevel} risk</span>
+              <div className="shrink-0 flex flex-col items-center justify-center min-w-[100px] border-l border-[#222] pl-6">
+                <span className={`text-4xl font-bold tabular-nums ${scoreColor}`}>{file.score}</span>
+                <span className="text-xs text-gray-500 uppercase mt-1.5 tracking-wider font-semibold">{file.riskLevel} risk</span>
               </div>
             </div>
           )
