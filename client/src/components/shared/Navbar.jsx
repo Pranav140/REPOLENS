@@ -11,11 +11,32 @@ export default function Navbar() {
     : 'RL'
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-[#0a0a0a] border-b border-[#222] flex items-center px-6">
+    <nav style={{
+      position: 'fixed', top: 0, left: 0, right: 0,
+      height: '56px',
+      background: 'rgba(10, 10, 10, 0.85)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      display: 'flex', alignItems: 'center',
+      padding: '0 24px', zIndex: 100,
+      justifyContent: 'space-between'
+    }}>
       {/* Logo */}
-      <span className="font-bold text-white text-lg tracking-tight select-none">
-        RepoLens
-      </span>
+      <div style={{ 
+        display: 'flex', alignItems: 'center', gap: '8px'
+      }}>
+        <div style={{
+          width: '8px', height: '8px', borderRadius: '50%',
+          background: '#3b82f6',
+          boxShadow: '0 0 8px rgba(59,130,246,0.8)'
+        }}/>
+        <span style={{ 
+          fontWeight: '700', fontSize: '15px', letterSpacing: '-0.02em', color: 'white'
+        }}>
+          RepoLens
+        </span>
+      </div>
 
       {/* Spacer */}
       <div className="flex-1" />
@@ -48,6 +69,6 @@ export default function Navbar() {
           <span className="hidden sm:block">Logout</span>
         </button>
       </div>
-    </header>
+    </nav>
   )
 }
