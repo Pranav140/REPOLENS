@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import ReactFlow, {
   Controls, MiniMap, Background,
@@ -35,7 +35,7 @@ function GraphInner() {
   const { owner, name } = useParams()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { fitView } = useReactFlow()
+  const { fitView, fitBounds } = useReactFlow()
 
   const [rawFiles, setRawFiles]     = useState([])
   const [rawEdges, setRawEdges]     = useState([])
@@ -49,6 +49,8 @@ function GraphInner() {
   const [tracePath,   setTracePath]   = useState([])
   const [traceResult, setTraceResult] = useState(null)
   const [tracing,     setTracing]     = useState(false)
+  const [traceDropdownOpen, setTraceDropdownOpen] = useState(false)
+  const traceInputRef = useRef(null)
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
   const [panelOpen,   setPanelOpen]   = useState(true)
@@ -114,8 +116,33 @@ function GraphInner() {
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map(n => n.id))
-    return edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
-  }, [edges, filteredNodes])
+    // Build a set of "source->target" pairs that are part of the trace path
+    const traceEdgeSet = new Set()
+    for (let i = 0; i < tracePath.length - 1; i++) {
+      traceEdgeSet.add(`${tracePath[i]}->${tracePath[i + 1]}`)
+    }
+    return edges
+      .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
+      .map(e => {
+        const isTraced = traceEdgeSet.has(`${e.source}->${e.target}`)
+        return isTraced
+          ? { ...e, style: { stroke: '#3b82f6', strokeWidth: 2.5 }, animated: true }
+          : { ...e, style: { stroke: '#444', strokeWidth: 1 }, animated: false }
+      })
+  }, [edges, filteredNodes, tracePath])
+
+  // ── trace autocomplete suggestions ────────────────────────────────────────
+  const traceSuggestions = useMemo(() => {
+    const q = traceTarget.trim().toLowerCase()
+    if (!q || q.length < 1) return []
+    return rawFiles
+      .filter(f => f.path !== selectedNode?.path)
+      .filter(f => {
+        const basename = f.path.split('/').pop().toLowerCase()
+        return basename.includes(q) || f.path.toLowerCase().includes(q)
+      })
+      .slice(0, 8)
+  }, [traceTarget, rawFiles, selectedNode])
 
   // ── trace ──────────────────────────────────────────────────────────────────
   async function handleTrace() {
@@ -142,6 +169,7 @@ function GraphInner() {
     setTracePath([])
     setTraceResult(null)
     setTraceTarget('')
+    setTraceDropdownOpen(false)
   }, [])
 
   const onPaneClick = useCallback(() => {
@@ -248,13 +276,38 @@ function GraphInner() {
           {/* Trace */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-gray-400">Trace Import Chain</p>
-            <input
-              type="text"
-              placeholder="Target file path..."
-              value={traceTarget}
-              onChange={e => setTraceTarget(e.target.value)}
-              className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-[#333] text-white placeholder:text-gray-600 focus:outline-none focus:border-[#444]"
-            />
+            <div className="relative" ref={traceInputRef}>
+              <input
+                type="text"
+                placeholder="Type a filename to search..."
+                value={traceTarget}
+                onChange={e => {
+                  setTraceTarget(e.target.value)
+                  setTraceDropdownOpen(true)
+                  setTraceResult(null)
+                }}
+                onFocus={() => setTraceDropdownOpen(true)}
+                onBlur={() => setTimeout(() => setTraceDropdownOpen(false), 150)}
+                className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-[#333] text-white placeholder:text-gray-600 focus:outline-none focus:border-[#444]"
+              />
+              {traceDropdownOpen && traceSuggestions.length > 0 && (
+                <ul className="absolute z-50 left-0 right-0 mt-1 bg-[#181818] border border-[#333] rounded-lg overflow-hidden shadow-xl max-h-48 overflow-y-auto">
+                  {traceSuggestions.map(f => (
+                    <li
+                      key={f.path}
+                      onMouseDown={() => {
+                        setTraceTarget(f.path)
+                        setTraceDropdownOpen(false)
+                      }}
+                      className="px-2.5 py-2 cursor-pointer hover:bg-[#252525] transition-colors"
+                    >
+                      <p className="text-xs text-white truncate">{f.path.split('/').pop()}</p>
+                      <p className="text-[10px] text-gray-500 truncate mt-0.5">{f.path}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <button
               onClick={handleTrace}
               disabled={tracing || !traceTarget.trim()}
@@ -269,13 +322,39 @@ function GraphInner() {
               traceResult.found ? (
                 <div className="space-y-1">
                   <p className="text-xs text-green-400">Path found ({traceResult.path.length} hops)</p>
-                  <div className="font-mono text-[10px] text-gray-400 space-y-0.5">
-                    {traceResult.path.map((p, i) => (
-                      <div key={p}>
-                        {i > 0 && <span className="text-gray-600 mr-1">→</span>}
-                        <span className="break-all">{p.split('/').pop()}</span>
-                      </div>
-                    ))}
+                  <div className="font-mono text-[10px] space-y-0.5">
+                    {traceResult.path.map((p, i) => {
+                      const basename = p.split('/').pop()
+                      return (
+                        <div key={p} className="flex items-start gap-1">
+                          {i > 0 && <span className="text-gray-600 mt-0.5 shrink-0">→</span>}
+                          <button
+                            title={p}
+                            onClick={() => {
+                              // select the node in the panel
+                              const nodeData = rawFiles.find(f => f.path === p)
+                              if (nodeData) setSelectedNode({
+                                label: nodeData.name,
+                                path: nodeData.path,
+                                language: nodeData.language,
+                                isDead: nodeData.isDead,
+                                isEntry: nodeData.isEntry,
+                                complexity: nodeData.complexityScore ?? 0,
+                              })
+                              // center the canvas on it
+                              fitView({
+                                nodes: [{ id: p }],
+                                duration: 500,
+                                padding: 0.5,
+                              })
+                            }}
+                            className="text-left text-blue-400 hover:text-blue-300 hover:underline break-all cursor-pointer transition-colors"
+                          >
+                            {basename}
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               ) : (

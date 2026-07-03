@@ -2,7 +2,8 @@ const path = require('path');
 
 const STRIPPABLE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.py'];
 
-const ENTRY_FILENAMES = [
+const ENTRY_FILENAMES = new Set([
+  // JavaScript
   'index.js',
   'index.jsx',
   'main.js',
@@ -10,7 +11,20 @@ const ENTRY_FILENAMES = [
   'server.js',
   'App.jsx',
   'App.js',
-];
+  // TypeScript
+  'index.ts',
+  'index.tsx',
+  'main.ts',
+  'app.ts',
+  'server.ts',
+  'App.tsx',
+  'App.ts',
+  // Python
+  'main.py',
+  'app.py',
+  'server.py',
+  '__main__.py',
+]);
 
 const TECH_STACK_KEYS = [
   'react',
@@ -266,7 +280,7 @@ function detectTechStack(filePaths, packageJsonContent) {
  */
 function isEntryPoint(filePath) {
   const filename = path.basename(filePath);
-  return ENTRY_FILENAMES.includes(filename);
+  return ENTRY_FILENAMES.has(filename);
 }
 
 module.exports = {
