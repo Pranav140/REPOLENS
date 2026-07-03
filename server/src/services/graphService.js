@@ -29,11 +29,22 @@ async function traceImportChain(repositoryId, from, to) {
   const queue = [[from]];
   const visited = new Set([from]);
 
+  // Try to find the exact target node path, or fuzzy match if they typed a basename
+  const edges = await RepositoryEdge.find({ repositoryId });
+  const allNodes = new Set();
+  edges.forEach(e => { allNodes.add(e.source); allNodes.add(e.target); });
+  
+  let targetPath = to;
+  if (!allNodes.has(to)) {
+    const matched = [...allNodes].find(p => p.endsWith('/' + to) || p === to);
+    if (matched) targetPath = matched;
+  }
+
   while (queue.length) {
     const current = queue.shift();
     const node = current[current.length - 1];
 
-    if (node === to) return current;
+    if (node === targetPath) return current;
     if (current.length > 10) continue;
 
     for (const neighbor of adj[node] || []) {
