@@ -130,16 +130,28 @@ async function analyzeRepository(repositoryId, userId) {
     // ── STEP 4: Build dependency edges ─────────────────────────────────────
     const allFiles = await RepositoryFile.find({ repositoryId });
     const pathSet = new Set(allFiles.map((f) => f.path));
+    const extlessMap = new Map();
+    for (const f of allFiles) {
+      extlessMap.set(parserService.stripExtension(f.path).replace(/\\/g, '/'), f.path);
+    }
+    
     const edges = [];
 
     for (const file of allFiles) {
       const fileImports = parserService.extractImports(file.content || '', file.path);
       for (const imp of fileImports) {
-        if (pathSet.has(imp) && imp !== file.path) {
+        // Try exact match first
+        let target = imp;
+        if (!pathSet.has(target)) {
+          // Fallback to extensionless match
+          target = extlessMap.get(imp.replace(/\\/g, '/'));
+        }
+        
+        if (target && target !== file.path) {
           edges.push({
             repositoryId,
             source: file.path,
-            target: imp,
+            target: target,
             type: 'import',
           });
         }

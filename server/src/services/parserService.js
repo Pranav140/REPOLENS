@@ -1,6 +1,6 @@
 const path = require('path');
 
-const STRIPPABLE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx'];
+const STRIPPABLE_EXTENSIONS = ['.js', '.jsx', '.ts', '.tsx', '.py'];
 
 const ENTRY_FILENAMES = [
   'index.js',
@@ -42,35 +42,76 @@ const TECH_STACK_KEYS = [
  * @param {string} p
  */
 function stripExtension(p) {
-  const ext = path.extname(p);
+  const ext = path.posix.extname(p);
   return STRIPPABLE_EXTENSIONS.includes(ext) ? p.slice(0, -ext.length) : p;
 }
 
 /**
  * Extract all static import / require / dynamic-import paths from source content.
- * Only resolves relative paths (starting with . or ..).
+ * Only resolves relative paths (starting with . or ..) for JS, but for Python tries to resolve absolute module names.
  * @param {string} content
  * @param {string} filePath - absolute or repo-relative path of the file
  * @returns {string[]} Deduplicated resolved paths (extensions stripped)
  */
 function extractImports(content, filePath) {
+  const isPython = filePath.endsWith('.py');
+  const dir = path.posix.dirname(filePath);
+  const raw = new Set();
+
+  if (isPython) {
+    const importRe = /^\s*import\s+([a-zA-Z0-9_., ]+)/gm;
+    const fromRe = /^\s*from\s+([a-zA-Z0-9_.]+)\s+import/gm;
+    let match;
+    
+    while ((match = importRe.exec(content)) !== null) {
+      const modules = match[1].split(',').map(s => s.trim());
+      for (const mod of modules) {
+        if (mod) {
+          // Assume the module is in the same directory for a naive intra-repo check
+          // e.g. import helper -> helper
+          raw.add(path.posix.join(dir, mod));
+        }
+      }
+    }
+    
+    while ((match = fromRe.exec(content)) !== null) {
+      const mod = match[1];
+      if (mod) {
+        // e.g. from src.utils import x -> src/utils
+        // This assumes root-level absolute import, which is common in Python
+        raw.add(mod.replace(/\./g, '/'));
+        
+        // Also try relative to current dir in case it's a local import (naive fallback)
+        raw.add(path.posix.join(dir, mod.replace(/\./g, '/')));
+      }
+    }
+    return [...raw];
+  }
+
+  // JS/TS handling
   const patterns = [
     /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g,
     /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
     /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   ];
 
-  const raw = new Set();
-
   for (const regex of patterns) {
     let match;
     while ((match = regex.exec(content)) !== null) {
-      const specifier = match[1];
+      let specifier = match[1];
       if (!specifier.startsWith('.')) continue; // skip bare module specifiers
-      const resolved = stripExtension(
-        path.resolve(path.dirname(filePath), specifier)
-      );
+      
+      // Remove trailing index since import './utils' can mean './utils/index.js'
+      if (specifier.endsWith('/')) specifier += 'index';
+      
+      let resolved = path.posix.join(dir, specifier);
+      resolved = stripExtension(resolved);
       raw.add(resolved);
+      
+      // Also add '/index' variant because JS resolves folders to folder/index.js
+      if (!resolved.endsWith('/index')) {
+        raw.add(resolved + '/index');
+      }
     }
   }
 
@@ -229,6 +270,7 @@ function isEntryPoint(filePath) {
 }
 
 module.exports = {
+  stripExtension,
   extractImports,
   extractExports,
   extractFunctions,
