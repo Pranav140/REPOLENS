@@ -43,7 +43,7 @@ function GraphInner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   const [selectedNode, setSelectedNode] = useState(null)
-  const [showDead,    setShowDead]    = useState(true)
+  const [deadOnly,    setDeadOnly]    = useState(false)
   const [entryOnly,   setEntryOnly]   = useState(false)
   const [traceTarget, setTraceTarget] = useState('')
   const [tracePath,   setTracePath]   = useState([])
@@ -94,8 +94,14 @@ function GraphInner() {
   // ── filtered nodes + edges ─────────────────────────────────────────────────
   const filteredNodes = useMemo(() => {
     let n = nodes
-    if (!showDead) n = n.filter(node => !node.data.isDead)
-    if (entryOnly) n = n.filter(node => node.data.isEntry)
+    if (deadOnly && entryOnly) {
+      // both active: show files that are dead AND entry (edge case, but handle it)
+      n = n.filter(node => node.data.isDead && node.data.isEntry)
+    } else if (deadOnly) {
+      n = n.filter(node => node.data.isDead)
+    } else if (entryOnly) {
+      n = n.filter(node => node.data.isEntry)
+    }
 
     const traceSet = new Set(tracePath)
     return n.map(node => ({
@@ -104,7 +110,7 @@ function GraphInner() {
         ? { border: '2px solid #3b82f6', boxShadow: '0 0 8px #3b82f6' }
         : undefined,
     }))
-  }, [nodes, showDead, entryOnly, tracePath])
+  }, [nodes, deadOnly, entryOnly, tracePath])
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map(n => n.id))
@@ -180,8 +186,8 @@ function GraphInner() {
       <div className="absolute top-4 left-4 z-10 rounded-xl border border-[#222] bg-[#111]/90 backdrop-blur p-3 flex items-center gap-4 text-sm shadow-lg">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <Switch
-            checked={showDead}
-            onCheckedChange={setShowDead}
+            checked={deadOnly}
+            onCheckedChange={setDeadOnly}
             className="scale-75"
           />
           <span className="text-gray-300">Dead Files</span>
