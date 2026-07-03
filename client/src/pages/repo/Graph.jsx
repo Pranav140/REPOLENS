@@ -7,6 +7,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 import dagre from 'dagre'
+import { Flame } from 'lucide-react'
 import { Switch } from '../../components/ui/switch'
 import { Skeleton } from '../../components/ui/skeleton'
 import FileNode from '../../components/shared/FileNode'
@@ -54,6 +55,7 @@ function GraphInner() {
   const [loading,     setLoading]     = useState(true)
   const [error,       setError]       = useState(null)
   const [panelOpen,   setPanelOpen]   = useState(true)
+  const [blastRadiusData, setBlastRadiusData] = useState(null)
 
   // ── fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -86,12 +88,40 @@ function GraphInner() {
         const highlightPath = searchParams.get('highlight')
         if (highlightPath) {
           const highlightNode = rfNodes.find(n => n.id === highlightPath)
-          if (highlightNode) setSelectedNode(highlightNode.data)
+          if (highlightNode) {
+            setSelectedNode(highlightNode.data)
+            setPanelOpen(true) // Force panel open when highlighting
+          }
         }
       })
       .catch(e => setError(e.response?.data?.message || 'Failed to load graph'))
       .finally(() => setLoading(false))
   }, [owner, name]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-center on highlighted node after nodes are rendered
+  useEffect(() => {
+    const highlightPath = searchParams.get('highlight')
+    if (highlightPath && nodes.length > 0) {
+      // Fetch blast radius data for context
+      api.get(`/api/repos/${owner}/${name}/blast-radius`)
+        .then(res => {
+          const results = res.data.results || []
+          const fileData = results.find(f => f.path === highlightPath)
+          setBlastRadiusData(fileData || null)
+        })
+        .catch(() => setBlastRadiusData(null))
+      
+      const timer = setTimeout(() => {
+        fitView({
+          nodes: [{ id: highlightPath }],
+          duration: 800,
+          padding: 0.3,
+          maxZoom: 0.8,
+        })
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [nodes, searchParams, fitView, owner, name])
 
   // ── filtered nodes + edges ─────────────────────────────────────────────────
   const filteredNodes = useMemo(() => {
@@ -106,13 +136,30 @@ function GraphInner() {
     }
 
     const traceSet = new Set(tracePath)
-    return n.map(node => ({
-      ...node,
-      style: traceSet.has(node.id)
-        ? { border: '2px solid #3b82f6', boxShadow: '0 0 8px #3b82f6' }
-        : undefined,
-    }))
-  }, [nodes, deadOnly, entryOnly, tracePath])
+    const highlightPath = searchParams.get('highlight')
+    
+    return n.map(node => {
+      // Trace highlighting (blue)
+      if (traceSet.has(node.id)) {
+        return {
+          ...node,
+          style: { border: '2px solid #3b82f6', boxShadow: '0 0 8px #3b82f6' }
+        }
+      }
+      // Blast radius highlighting (orange, more prominent)
+      if (highlightPath === node.id) {
+        return {
+          ...node,
+          style: { 
+            border: '3px solid #f97316', 
+            boxShadow: '0 0 20px rgba(249,115,22,0.6)',
+            transform: 'scale(1.05)'
+          }
+        }
+      }
+      return node
+    })
+  }, [nodes, deadOnly, entryOnly, tracePath, searchParams])
 
   const filteredEdges = useMemo(() => {
     const nodeIds = new Set(filteredNodes.map(n => n.id))
@@ -125,8 +172,12 @@ function GraphInner() {
       .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
       .map(e => {
         const isTraced = traceEdgeSet.has(`${e.source}->${e.target}`)
+        const isConnectedToSelected = selectedNode && (e.source === selectedNode.path || e.target === selectedNode.path)
+        
         return isTraced
           ? { ...e, style: { stroke: '#3b82f6', strokeWidth: 2.5 }, animated: true }
+          : isConnectedToSelected
+          ? { ...e, style: { stroke: '#f97316', strokeWidth: 2 }, animated: true }
           : { ...e, style: { stroke: '#444', strokeWidth: 1 }, animated: false }
       })
   }, [edges, filteredNodes, tracePath])
@@ -210,6 +261,30 @@ function GraphInner() {
 
   return (
     <div className="w-full h-[calc(100vh-120px)] relative">
+      {/* ── Blast Radius context banner ─────────────────────────────────── */}
+      {searchParams.get('highlight') && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-lg bg-orange-500/20 border border-orange-500/40 text-orange-300 text-xs font-medium flex items-center gap-3 shadow-lg">
+          <Flame size={14} />
+          <span>Viewing high-risk file from Blast Radius analysis</span>
+          <button
+            onClick={() => {
+              const highlightPath = searchParams.get('highlight')
+              if (highlightPath) {
+                fitView({
+                  nodes: [{ id: highlightPath }],
+                  duration: 600,
+                  padding: 0.3,
+                  maxZoom: 0.8,
+                })
+              }
+            }}
+            className="ml-2 px-2 py-1 rounded bg-orange-500/30 hover:bg-orange-500/40 border border-orange-500/50 transition-colors text-orange-200 hover:text-orange-100"
+          >
+            Center View
+          </button>
+        </div>
+      )}
+      
       {/* ── Toolbar ────────────────────────────────────────────────────── */}
       <div className="absolute top-4 left-4 z-10 rounded-xl border border-[#222] bg-[#111]/90 backdrop-blur p-3 flex items-center gap-4 text-sm shadow-lg">
         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -270,6 +345,51 @@ function GraphInner() {
               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Entry</span>
             )}
           </div>
+
+          {/* ── Blast Radius Context ────────────────────────────────────── */}
+          {blastRadiusData && (
+            <>
+              <div className="border-t border-[#222]" />
+              <div className="space-y-3 rounded-lg bg-orange-500/5 border border-orange-500/20 p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Flame size={16} className="text-orange-400" />
+                    <span className="text-xs font-semibold text-orange-300">Blast Radius Risk</span>
+                  </div>
+                  <span className={`text-2xl font-bold tabular-nums ${
+                    blastRadiusData.score >= 60 ? 'text-red-400' : 
+                    blastRadiusData.score >= 30 ? 'text-yellow-400' : 
+                    'text-green-400'
+                  }`}>
+                    {blastRadiusData.score}
+                  </span>
+                </div>
+                
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  {blastRadiusData.reason}
+                </p>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-[#0a0a0a] rounded p-2 border border-[#222]">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-0.5">Dependents</p>
+                    <p className="text-sm font-semibold text-white">{blastRadiusData.dependentCount}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] rounded p-2 border border-[#222]">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-0.5">Entry Points</p>
+                    <p className="text-sm font-semibold text-white">{blastRadiusData.entryPointsAffected}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] rounded p-2 border border-[#222]">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-0.5">Recent Commits</p>
+                    <p className="text-sm font-semibold text-white">{blastRadiusData.commitFrequency}</p>
+                  </div>
+                  <div className="bg-[#0a0a0a] rounded p-2 border border-[#222]">
+                    <p className="text-[10px] text-gray-600 uppercase tracking-wide mb-0.5">Risk Level</p>
+                    <p className="text-sm font-semibold text-white capitalize">{blastRadiusData.riskLevel}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="border-t border-[#222]" />
 
