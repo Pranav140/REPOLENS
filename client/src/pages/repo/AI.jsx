@@ -31,19 +31,55 @@ const README_LABELS = {
 
 function Spinner() {
   return (
-    <div className="flex flex-col items-center gap-3 py-12">
-      <div className="w-8 h-8 border-2 border-[#333] border-t-purple-400 rounded-full animate-spin" />
-      <p className="text-sm text-gray-400">Gemini is analyzing…</p>
-    </div>
+    <>
+      <style>{`
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+        @keyframes spinFast { 100% { transform: rotate(-360deg); } }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.5; box-shadow: 0 0 10px rgba(168,85,247,0.2); }
+          50% { opacity: 1; box-shadow: 0 0 20px rgba(168,85,247,0.6); }
+        }
+      `}</style>
+      <div className="flex flex-col items-center justify-center py-20 gap-6">
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          {/* Outer ring */}
+          <div className="absolute inset-0 rounded-full border border-[#222]" />
+          <div 
+            className="absolute inset-0 rounded-full border-t-2 border-r-2 border-transparent border-t-purple-500"
+            style={{ animation: 'spinSlow 2s linear infinite' }} 
+          />
+          {/* Inner ring */}
+          <div 
+            className="absolute inset-2 rounded-full border border-[#222]" 
+          />
+          <div 
+            className="absolute inset-2 rounded-full border-b-2 border-l-2 border-transparent border-b-purple-400"
+            style={{ animation: 'spinFast 1.5s linear infinite' }} 
+          />
+          {/* Core glow */}
+          <div 
+            className="w-3 h-3 bg-purple-500 rounded-full"
+            style={{ animation: 'pulseGlow 2s ease-in-out infinite' }}
+          />
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium text-purple-300 tracking-wide uppercase">AI Agent Active</p>
+          <p className="text-xs text-gray-500 mt-1">Analyzing codebase patterns...</p>
+        </div>
+      </div>
+    </>
   )
 }
 
 function Paragraphs({ text }) {
   return (
-    <div className="space-y-3">
-      {(text || '').split('\n\n').filter(Boolean).map((p, i) => (
-        <p key={i} className="text-sm text-gray-300 leading-relaxed">{p}</p>
-      ))}
+    <div className="relative rounded-lg border border-[#222] bg-[#0d0d0d] p-5 shadow-lg overflow-hidden mt-4">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-transparent opacity-80" />
+      <div className="space-y-3">
+        {(text || '').split('\n\n').filter(Boolean).map((p, i) => (
+          <p key={i} className="text-sm text-gray-300 leading-relaxed">{p}</p>
+        ))}
+      </div>
     </div>
   )
 }
@@ -181,8 +217,9 @@ export default function AI() {
           Generate Guide
         </button>
         {result?.guide && (
-          <div className="space-y-2">
-            <div className="rounded-xl border border-[#222] bg-[#0a0a0a] p-5 prose prose-invert prose-sm max-w-none
+          <div className="space-y-2 mt-4 relative rounded-lg border border-[#222] bg-[#0d0d0d] p-5 shadow-lg overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-transparent opacity-80" />
+            <div className="prose prose-invert prose-sm max-w-none
                             prose-headings:text-white prose-p:text-gray-300 prose-li:text-gray-300
                             prose-code:text-blue-300 prose-code:bg-[#1e1e1e] prose-code:px-1 prose-code:rounded">
               <ReactMarkdown>{result.guide}</ReactMarkdown>
@@ -283,7 +320,8 @@ export default function AI() {
           Score README
         </button>
         {result && (
-          <div className="space-y-4">
+          <div className="space-y-4 mt-4 relative rounded-lg border border-[#222] bg-[#0d0d0d] p-5 shadow-lg overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-transparent opacity-80" />
             <div className="flex items-baseline gap-1">
               <span className={`text-5xl font-bold ${scoreColor}`}>{score}</span>
               <span className="text-xl text-gray-500">/100</span>
