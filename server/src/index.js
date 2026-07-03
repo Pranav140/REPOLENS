@@ -35,6 +35,9 @@ app.use(limiter);
 // Mount API routes
 app.use('/api', routes);
 
+// Health check root
+app.get('/', (req, res) => res.send('OK'));
+
 // Global Error Handler
 app.use(errorHandler);
 
