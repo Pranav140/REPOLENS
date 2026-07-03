@@ -127,11 +127,72 @@ export default function RepoLayout() {
     return (
       <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center gap-5">
-          <div className="w-12 h-12 border-2 border-[#333] border-t-blue-400 rounded-full animate-spin" />
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-white mb-1">Analyzing repository…</h2>
-            <p className="text-sm text-gray-500">This usually takes 30–60 seconds</p>
+        <style>{`
+          @keyframes progressBar {
+            0% { width: 0%; }
+            20% { width: 25%; }
+            50% { width: 60%; }
+            80% { width: 80%; }
+            95% { width: 92%; }
+          }
+          @keyframes stepFade {
+            from { opacity: 0; transform: translateX(-8px); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+        `}</style>
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(10,10,10,0.97)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          zIndex: 200
+        }}>
+          <div style={{ 
+            fontFamily: 'monospace', maxWidth: '360px',
+            width: '100%'
+          }}>
+            <div style={{ 
+              color: '#3b82f6', fontSize: '12px', 
+              letterSpacing: '0.15em', marginBottom: '24px'
+            }}>
+              ANALYZING REPOSITORY
+            </div>
+            
+            {/* Progress bar */}
+            <div style={{ 
+              background: '#1a1a1a', borderRadius: '2px', 
+              height: '2px', marginBottom: '32px'
+            }}>
+              <div style={{
+                height: '100%', borderRadius: '2px',
+                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
+                animation: 'progressBar 60s ease forwards',
+                boxShadow: '0 0 8px rgba(59,130,246,0.6)'
+              }}/>
+            </div>
+            
+            {/* Steps */}
+            {[
+              'cloning repository tree',
+              'extracting file contents', 
+              'parsing imports and exports',
+              'building dependency graph',
+              'detecting circular dependencies',
+              'computing health metrics',
+              'identifying dead code',
+              'finalizing analysis'
+            ].map((step, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                marginBottom: '8px', fontSize: '12px',
+                animation: `stepFade 0.3s ease forwards`,
+                animationDelay: `${i * 1.5}s`,
+                opacity: 0
+              }}>
+                <span style={{ color: '#3b82f6' }}>→</span>
+                <span style={{ color: '#555' }}>{step}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -220,13 +281,17 @@ export default function RepoLayout() {
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                `px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'bg-[#222] text-white font-medium'
-                    : 'text-gray-400 hover:text-white hover:bg-[#1a1a1a]'
-                }`
-              }
+              style={({ isActive }) => ({
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '8px 12px', borderRadius: '6px',
+                fontSize: '13px', textDecoration: 'none',
+                color: isActive ? '#ffffff' : '#666',
+                background: isActive ? '#1a1a1a' : 'transparent',
+                borderLeft: isActive 
+                  ? '2px solid #3b82f6' : '2px solid transparent',
+                transition: 'all 0.15s ease',
+                marginBottom: '2px'
+              })}
             >
               {label}
             </NavLink>

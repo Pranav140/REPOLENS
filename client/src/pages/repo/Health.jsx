@@ -30,22 +30,93 @@ function Card({ children, title }) {
 }
 
 function ScoreRing({ score }) {
-  const r = 60
-  const circ = 2 * Math.PI * r
+  const color = score >= 70 ? '#22c55e' : 
+                score >= 40 ? '#f59e0b' : '#ef4444'
+  const radius = 70
+  const circ = 2 * Math.PI * radius
   const offset = circ - (score / 100) * circ
-  const color = score >= 70 ? '#22c55e' : score >= 40 ? '#eab308' : '#ef4444'
+
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width="160" height="160">
-        <circle cx="80" cy="80" r={r} stroke="#222" strokeWidth="12" fill="none" />
-        <circle cx="80" cy="80" r={r} stroke={color} strokeWidth="12" fill="none"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          transform="rotate(-90 80 80)" strokeLinecap="round"
-          style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-        <text x="80" y="90" textAnchor="middle" fontSize="32" fill="white" fontWeight="bold">{score}</text>
-      </svg>
-      <span className="text-sm text-gray-400">Repository Health Score</span>
-    </div>
+    <>
+      <style>{`
+        @keyframes dashReveal {
+          from { stroke-dashoffset: ${2 * Math.PI * 60}px; }
+          to { stroke-dashoffset: ${offset}px; }
+        }
+        @keyframes glowPulse {
+          0%, 100% { filter: drop-shadow(0 0 4px ${color}40); }
+          50% { filter: drop-shadow(0 0 12px ${color}80); }
+        }
+        @keyframes scoreCount {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+      `}</style>
+      <div style={{ 
+        display: 'flex', flexDirection: 'column', 
+        alignItems: 'center', gap: '8px',
+        padding: '32px'
+      }}>
+        <svg width="180" height="180" 
+          style={{ animation: 'glowPulse 3s ease-in-out infinite' }}>
+          {/* Background track */}
+          <circle cx="90" cy="90" r={radius}
+            stroke="#1a1a1a" strokeWidth="10" fill="none"/>
+          {/* Subtle tick marks */}
+          {Array.from({ length: 20 }).map((_, i) => {
+            const angle = (i / 20) * 2 * Math.PI - Math.PI / 2
+            const inner = radius - 14
+            const outer = radius - 8
+            return (
+              <line key={i}
+                x1={90 + inner * Math.cos(angle)}
+                y1={90 + inner * Math.sin(angle)}
+                x2={90 + outer * Math.cos(angle)}
+                y2={90 + outer * Math.sin(angle)}
+                stroke="#2a2a2a" strokeWidth="1"
+              />
+            )
+          })}
+          {/* Main progress arc */}
+          <circle cx="90" cy="90" r={radius}
+            stroke={color}
+            strokeWidth="10" fill="none"
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={circ}
+            transform="rotate(-90 90 90)"
+            style={{
+              animation: `dashReveal 1.2s ease forwards`,
+              animationDelay: '0.3s'
+            }}
+          />
+          {/* Score label */}
+          <text x="90" y="82" textAnchor="middle"
+            fontSize="36" fontWeight="800"
+            fill="white" fontFamily="monospace">
+            {score}
+          </text>
+          <text x="90" y="104" textAnchor="middle"
+            fontSize="11" fill="#555" letterSpacing="0.15em">
+            HEALTH SCORE
+          </text>
+        </svg>
+        <div style={{ 
+          display: 'flex', gap: '6px', alignItems: 'center' 
+        }}>
+          <div style={{ 
+            width: '8px', height: '8px', borderRadius: '50%',
+            background: color,
+            boxShadow: `0 0 6px ${color}`,
+            animation: 'glowPulse 2s ease-in-out infinite'
+          }}/>
+          <span style={{ color: '#666', fontSize: '12px' }}>
+            {score >= 70 ? 'healthy' : 
+             score >= 40 ? 'needs attention' : 'critical'}
+          </span>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -121,6 +192,19 @@ export default function Health() {
     {label:'Coupling', v:coupling, status:getStatus(Number(coupling),2,5), desc:'Average imports per file'},
   ]
 
+  const getCardStyle = (status) => ({
+    background: '#111',
+    border: `1px solid ${
+      status === 'good' ? 'rgba(34,197,94,0.2)' :
+      status === 'warning' ? 'rgba(245,158,11,0.2)' :
+      'rgba(239,68,68,0.2)'
+    }`,
+    boxShadow: status === 'danger' 
+      ? '0 0 12px rgba(239,68,68,0.05)' : 'none',
+    borderRadius: '8px', padding: '16px',
+    transition: 'all 0.2s ease'
+  })
+
   return (
     <div className="space-y-4">
       <Card>
@@ -131,7 +215,7 @@ export default function Health() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map(c=>(
-          <div key={c.label} className="rounded-xl border border-[#222] bg-[#0a0a0a] p-4 space-y-1">
+          <div key={c.label} style={getCardStyle(c.status)} className="space-y-1">
             <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{c.label}</p>
             <p className={`text-2xl font-bold ${S[c.status]}`}>{c.v}</p>
             <p className="text-xs text-gray-600">{c.desc}</p>

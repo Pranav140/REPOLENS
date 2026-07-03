@@ -161,8 +161,8 @@ export default function BlastRadius() {
       <div className="space-y-3">
         {data?.map((file, index) => {
           let styleOverrides = {
-            animation: \`fadeSlideIn 0.4s ease forwards\`,
-            animationDelay: \`\${index * 60}ms\`,
+            animation: `fadeSlideIn 0.4s ease forwards`,
+            animationDelay: `${index * 60}ms`,
             opacity: 0,
             background: '#111',
             border: '1px solid #222',
@@ -189,8 +189,8 @@ export default function BlastRadius() {
           }
 
           if (file.riskLevel === 'high') {
-            styleOverrides.animation = \`fadeSlideIn 0.4s ease forwards, threatPulse 3s ease-in-out infinite\`
-            styleOverrides.animationDelay = \`\${index * 60}ms, \${index * 60 + 400}ms\`
+            styleOverrides.animation = `fadeSlideIn 0.4s ease forwards, threatPulse 3s ease-in-out infinite`
+            styleOverrides.animationDelay = `${index * 60}ms, ${index * 60 + 400}ms`
           }
           
           return (
@@ -232,8 +232,8 @@ export default function BlastRadius() {
                         file.score >= 30 ? '#f59e0b' : '#22c55e'
                       }
                       strokeWidth="4" fill="none"
-                      strokeDasharray={\`${2 * Math.PI * 28}\`}
-                      strokeDashoffset={\`${2 * Math.PI * 28 * (1 - file.score / 100)}\`}
+                      strokeDasharray={`${2 * Math.PI * 28}`}
+                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - file.score / 100)}`}
                       transform="rotate(-90 32 32)"
                       style={{ transition: 'stroke-dashoffset 1s ease' }}
                     />
