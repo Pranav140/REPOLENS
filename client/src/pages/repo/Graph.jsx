@@ -150,10 +150,10 @@ function GraphInner() {
       if (highlightPath === node.id) {
         return {
           ...node,
+          selected: true,
           style: { 
             border: '3px solid #f97316', 
-            boxShadow: '0 0 20px rgba(249,115,22,0.6)',
-            transform: 'scale(1.05)'
+            boxShadow: '0 0 20px rgba(249,115,22,0.6)'
           }
         }
       }
@@ -180,7 +180,7 @@ function GraphInner() {
           ? { ...e, style: { stroke: '#f97316', strokeWidth: 2 }, animated: true }
           : { ...e, style: { stroke: '#444', strokeWidth: 1 }, animated: false }
       })
-  }, [edges, filteredNodes, tracePath])
+  }, [edges, filteredNodes, tracePath, selectedNode])
 
   // ── trace autocomplete suggestions ────────────────────────────────────────
   const traceSuggestions = useMemo(() => {
