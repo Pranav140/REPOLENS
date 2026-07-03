@@ -28,23 +28,26 @@ export default function Search() {
   const [results, setResults] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
+  const [error, setError] = useState(null)
 
   // ── debounced search ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (query.length < 2) { setResults([]); return }
+    if (query.length < 2) { setResults([]); setError(null); return }
     const t = setTimeout(fetchResults, 300)
     return () => clearTimeout(t)
   }, [query, typeFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchResults() {
     setIsLoading(true)
+    setError(null)
     try {
       const res = await api.get(`/api/search/${owner}/${name}`, {
         params: { q: query, type: typeFilter },
       })
       setResults(res.data.results || [])
-    } catch {
+    } catch (err) {
       setResults([])
+      setError(err.message)
     } finally {
       setIsLoading(false)
     }
@@ -112,7 +115,7 @@ export default function Search() {
       )}
 
       {/* Results list */}
-      {!isLoading && results.length > 0 && (
+      {!isLoading && !error && results.length > 0 && (
         <div className="space-y-2">
           {results.map((r, i) => (
             <button
@@ -143,7 +146,12 @@ export default function Search() {
       )}
 
       {/* Empty states */}
-      {!isLoading && results.length === 0 && query.length >= 2 && (
+      {!isLoading && error && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+      {!isLoading && results.length === 0 && query.length >= 2 && !error && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <SearchIcon size={32} className="text-gray-700 mb-3" />
           <p className="text-gray-500 text-sm">No results for &ldquo;{query}&rdquo;</p>
@@ -176,11 +184,15 @@ export default function Search() {
 function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
   const [deps, setDeps] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     api.get(`/api/graph/${owner}/${name}/file`, { params: { path: file.path } })
       .then(r => setDeps(r.data))
-      .catch(() => setDeps({ imports: [], importedBy: [] }))
+      .catch(err => {
+        setDeps({ imports: [], importedBy: [] })
+        setError(err.message)
+      })
       .finally(() => setLoading(false))
   }, [file.path]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -233,6 +245,7 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
             </div>
           ) : (
             <>
+              {error && <p className="text-xs text-red-400">{error}</p>}
               <div>
                 <p className="text-xs font-semibold text-gray-400 mb-1.5">
                   Imports ({deps?.imports?.length ?? 0})
