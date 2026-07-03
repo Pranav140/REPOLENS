@@ -89,6 +89,31 @@ router.post('/import', async (req, res, next) => {
   }
 });
 
+// ─── GET /api/repos/github-repos ───────────────────────────────────────────────
+
+router.get('/github-repos', async (req, res, next) => {
+  try {
+    const { data } = await require('axios').get('https://api.github.com/user/repos?per_page=100&sort=updated', {
+      headers: {
+        Authorization: `Bearer ${req.user.accessToken}`,
+        'User-Agent': 'RepoLens',
+      },
+    });
+    // Filter out minimal details
+    const repos = data.map(r => ({
+      id: r.id,
+      name: r.name,
+      owner: r.owner.login,
+      fullName: r.full_name,
+      private: r.private,
+      language: r.language,
+    }));
+    return res.status(200).json(repos);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ─── GET /api/repos ──────────────────────────────────────────────────────────
 
 router.get('/', async (req, res, next) => {
