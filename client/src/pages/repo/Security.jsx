@@ -30,30 +30,54 @@ function SevBadge({ severity }) {
 }
 
 function IssueCard({ issue }) {
-  const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl border border-[#222] bg-[#111] p-4 space-y-2">
-      <div className="flex items-start gap-2 flex-wrap">
-        <SevBadge severity={issue.severity} />
-        <span className="text-sm font-medium text-white">{issue.type}</span>
-        <span className="font-mono text-xs text-gray-500 ml-auto">
+    <div style={{
+      background: '#0d0d0d',
+      border: `1px solid ${
+        issue.severity === 'high' ? 'rgba(239,68,68,0.3)' :
+        issue.severity === 'medium' ? 'rgba(245,158,11,0.3)' :
+        'rgba(59,130,246,0.2)'
+      }`,
+      borderLeft: `3px solid ${
+        issue.severity === 'high' ? '#ef4444' :
+        issue.severity === 'medium' ? '#f59e0b' : '#3b82f6'
+      }`,
+      borderRadius: '6px',
+      padding: '12px 16px',
+      marginBottom: '8px',
+      fontFamily: 'monospace'
+    }}>
+      <div style={{ 
+        display: 'flex', alignItems: 'center', 
+        gap: '12px', fontSize: '12px' 
+      }}>
+        <span style={{ 
+          color: issue.severity === 'high' ? '#ef4444' :
+                 issue.severity === 'medium' ? '#f59e0b' : '#3b82f6',
+          fontWeight: '700', letterSpacing: '0.05em'
+        }}>
+          [{issue.severity.toUpperCase()}]
+        </span>
+        <span style={{ color: '#888' }}>{issue.type}</span>
+        <span style={{ color: '#555', marginLeft: 'auto' }}>
           {issue.filePath.split('/').pop()}:{issue.line}
         </span>
       </div>
-      <p className="text-sm text-gray-300">{issue.description}</p>
-
+      <div style={{ 
+        color: '#aaa', fontSize: '12px', marginTop: '4px' 
+      }}>
+        {issue.description}
+      </div>
+      {/* Code snippet */}
       {issue.snippet && (
-        <Collapsible open={open} onOpenChange={setOpen}>
-          <CollapsibleTrigger className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 cursor-pointer transition-colors">
-            {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-            {open ? 'Hide code' : 'Show code'}
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <pre className="mt-2 p-3 rounded-lg bg-[#0a0a0a] border border-[#222] text-xs text-gray-400 overflow-x-auto font-mono whitespace-pre-wrap break-all">
-              {issue.snippet}
-            </pre>
-          </CollapsibleContent>
-        </Collapsible>
+        <div style={{
+          background: '#111', borderRadius: '4px',
+          padding: '8px 12px', marginTop: '8px',
+          color: '#ef4444', fontSize: '11px',
+          borderLeft: '2px solid #333'
+        }}>
+          {issue.snippet}
+        </div>
       )}
     </div>
   )
@@ -100,11 +124,16 @@ export default function Security() {
   )
 
   if (!loading && summary.total === 0) return (
-    <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
-      <ShieldCheck size={48} className="text-green-400" />
-      <div>
-        <h2 className="text-lg font-semibold text-white">No security issues detected</h2>
-        <p className="text-sm text-gray-500 mt-1">Your codebase passed all security checks</p>
+    <div style={{
+      textAlign: 'center', padding: '48px',
+      fontFamily: 'monospace'
+    }}>
+      <div style={{ fontSize: '48px', marginBottom: '16px' }}>✓</div>
+      <div style={{ color: '#22c55e', fontSize: '18px' }}>
+        0 vulnerabilities detected
+      </div>
+      <div style={{ color: '#555', fontSize: '12px', marginTop: '8px' }}>
+        scan complete — all checks passed
       </div>
     </div>
   )
@@ -113,22 +142,70 @@ export default function Security() {
     ? [...issues].sort((a,b) => SEV_ORDER[a.severity] - SEV_ORDER[b.severity])
     : issues.filter(i => i.severity === filter)
 
-  const summaryCards = [
-    { label: 'High',   count: summary.high   ?? 0, bg: 'bg-red-950 border-red-800',    text: 'text-red-300' },
-    { label: 'Medium', count: summary.medium  ?? 0, bg: 'bg-yellow-950 border-yellow-800', text: 'text-yellow-300' },
-    { label: 'Low',    count: summary.low     ?? 0, bg: 'bg-blue-950 border-blue-800',  text: 'text-blue-300' },
-  ]
-
   return (
     <div className="space-y-4">
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        {summaryCards.map(c => (
-          <div key={c.label} className={`rounded-xl border p-5 ${c.bg}`}>
-            <p className={`text-3xl font-bold ${c.text}`}>{c.count}</p>
-            <p className={`text-sm mt-1 ${c.text} opacity-70`}>{c.label} Severity</p>
-          </div>
-        ))}
+      <style>{`
+        @keyframes scanLine {
+          0% { top: 0; }
+          100% { top: 100%; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        @keyframes countUp {
+          from { opacity: 0; transform: scale(0.8); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
+      
+      {/* Terminal header bar */}
+      <div style={{
+        background: '#0d0d0d',
+        border: '1px solid #1a1a1a',
+        borderRadius: '8px',
+        padding: '16px',
+        fontFamily: 'monospace',
+        marginBottom: '24px'
+      }}>
+        <div style={{ 
+          display: 'flex', alignItems: 'center', 
+          gap: '8px', marginBottom: '12px' 
+        }}>
+          <div style={{ 
+            width: '12px', height: '12px', 
+            borderRadius: '50%', background: '#ef4444' 
+          }}/>
+          <div style={{ 
+            width: '12px', height: '12px', 
+            borderRadius: '50%', background: '#f59e0b' 
+          }}/>
+          <div style={{ 
+            width: '12px', height: '12px', 
+            borderRadius: '50%', background: '#22c55e' 
+          }}/>
+          <span style={{ 
+            color: '#666', fontSize: '12px', marginLeft: '8px' 
+          }}>
+            repolens — security-scan
+          </span>
+        </div>
+        <div style={{ color: '#22c55e', fontSize: '13px' }}>
+          <span style={{ color: '#666' }}>$ </span>
+          running security scan on {owner}/{name}...
+        </div>
+        <div style={{ 
+          color: summary.high > 0 ? '#ef4444' : '#22c55e', 
+          fontSize: '13px', marginTop: '4px' 
+        }}>
+          <span style={{ color: '#666' }}>→ </span>
+          {summary.total} issue(s) found 
+          [{summary.high ?? 0} critical, {summary.medium ?? 0} medium, 
+          {summary.low ?? 0} low]
+          <span style={{ animation: 'blink 1s step-end infinite' }}>
+            _
+          </span>
+        </div>
       </div>
 
       {/* Filter tabs */}

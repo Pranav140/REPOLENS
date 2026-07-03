@@ -10,6 +10,11 @@ export default function OnboardingEstimate() {
   const [isLoading, setIsLoading] = useState(true)
   const [narration, setNarration] = useState(null)
   const [narrationLoading, setNarrationLoading] = useState(false)
+  const [barsVisible, setBarsVisible] = useState(false)
+
+  useEffect(() => {
+    if (estimate) setTimeout(() => setBarsVisible(true), 400)
+  }, [estimate])
 
   useEffect(() => {
     api.get(`/api/repos/${owner}/${name}/onboarding-estimate`)
@@ -44,22 +49,38 @@ export default function OnboardingEstimate() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="rounded-xl border border-[#222] bg-[#111] p-8 text-center flex flex-col items-center">
-        <div className="text-6xl font-bold text-white mb-2">{estimate.totalDays}</div>
-        <div className="text-lg text-gray-300 font-medium">days to become productive</div>
-        <div className="text-sm text-gray-500 mb-8">Estimated for a {estimate.level}</div>
-        
-        <div className="w-full max-w-md relative">
-          <div className="w-full h-3 bg-[#222] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all duration-1000"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
-          <div className="flex justify-between mt-2 text-xs text-gray-600">
-            <span>1 day</span>
-            <span>10+ days</span>
-          </div>
+      <style>{`
+        @keyframes daysCount {
+          from { opacity: 0; transform: scale(0.5); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes barGrow {
+          from { width: 0%; }
+          to { width: var(--target-width); }
+        }
+      `}</style>
+
+      <div style={{ textAlign: 'center', padding: '32px 0' }}>
+        <div style={{ 
+          fontSize: '11px', letterSpacing: '0.2em', 
+          color: '#555', marginBottom: '12px',
+          textTransform: 'uppercase'
+        }}>
+          estimated ramp-up time
+        </div>
+        <div style={{
+          fontSize: '80px', fontWeight: '800',
+          fontFamily: 'monospace', lineHeight: 1,
+          color: estimate.totalDays > 7 ? '#ef4444' :
+                 estimate.totalDays > 4 ? '#f59e0b' : '#22c55e',
+          animation: 'daysCount 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+        }}>
+          {estimate.totalDays}
+        </div>
+        <div style={{ 
+          color: '#555', fontSize: '14px', marginTop: '4px'
+        }}>
+          days for a mid-level developer
         </div>
       </div>
 
@@ -92,24 +113,54 @@ export default function OnboardingEstimate() {
           <p className="text-sm text-gray-500">Not enough folder structure detected for a breakdown</p>
         ) : (
           <div className="space-y-4">
-            {estimate.breakdown.map((folder, i) => {
-              const maxDays = estimate.breakdown[0].days || 1
-              const pct = (folder.days / maxDays) * 100
-              
+            {estimate.breakdown.map((item, index) => {
               return (
-                <div key={i} className="flex items-center gap-4">
-                  <span className="w-32 text-sm text-gray-300 font-mono truncate" title={folder.folder}>
-                    {folder.folder}
+                <div key={index} style={{ 
+                  display: 'flex', alignItems: 'center', 
+                  gap: '12px', marginBottom: '10px' 
+                }}>
+                  <span style={{ 
+                    width: '100px', fontSize: '12px', 
+                    color: '#888', textAlign: 'right', flexShrink: 0 
+                  }}>
+                    {item.folder}
                   </span>
-                  <div className="flex-1 h-6 bg-[#1a1a1a] rounded overflow-hidden relative">
-                    <div 
-                      className="h-full bg-blue-500/70 rounded flex items-center px-2 min-w-[32px] transition-all"
-                      style={{ width: `${Math.max(pct, 5)}%` }}
-                    >
-                      <span className="text-[10px] font-bold text-white drop-shadow-md">{folder.days}d</span>
+                  <div style={{ 
+                    flex: 1, height: '28px', 
+                    background: '#0d0d0d', borderRadius: '4px', 
+                    overflow: 'hidden', position: 'relative'
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: barsVisible 
+                        ? `${(item.days / estimate.breakdown[0].days) * 100}%` 
+                        : '0%',
+                      background: item.days > 3 
+                        ? 'linear-gradient(90deg, #ef4444, #f97316)' :
+                        item.days > 1.5 
+                        ? 'linear-gradient(90deg, #f59e0b, #eab308)' :
+                        'linear-gradient(90deg, #22c55e, #16a34a)',
+                      borderRadius: '4px',
+                      transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                      transitionDelay: `${index * 100}ms`,
+                      display: 'flex', alignItems: 'center',
+                      paddingLeft: '10px'
+                    }}>
+                      <span style={{ 
+                        color: 'white', fontSize: '11px', 
+                        fontWeight: '600', whiteSpace: 'nowrap',
+                        fontFamily: 'monospace'
+                      }}>
+                        {item.days}d
+                      </span>
                     </div>
                   </div>
-                  <span className="text-xs text-gray-500 w-32 truncate" title={folder.reason}>{folder.reason}</span>
+                  <span style={{ 
+                    width: '80px', fontSize: '11px', 
+                    color: '#444', flexShrink: 0 
+                  }}>
+                    {item.reason}
+                  </span>
                 </div>
               )
             })}
