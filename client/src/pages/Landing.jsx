@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { isAuthenticated, loading } = useAuth()
 
   useEffect(() => {
-    const token = localStorage.getItem('repolens_token')
-    if (token) navigate('/dashboard')
-  }, [navigate])
+    if (!loading && isAuthenticated) navigate('/dashboard')
+  }, [navigate, isAuthenticated, loading])
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 text-center">

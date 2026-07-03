@@ -6,11 +6,13 @@ export default function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [error, setError] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const code = searchParams.get('code')
     if (!code) {
       setError('No authorization code received from GitHub.')
+      setIsLoading(false)
       return
     }
 
@@ -25,6 +27,9 @@ export default function AuthCallback() {
         setError(
           err.response?.data?.message || 'Authentication failed. Please try again.'
         )
+      })
+      .finally(() => {
+        setIsLoading(false)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -49,7 +54,7 @@ export default function AuthCallback() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center gap-4">
       {/* Spinner */}
-      <div className="w-10 h-10 border-2 border-[#333] border-t-white rounded-full animate-spin" />
+      {isLoading && <div className="w-10 h-10 border-2 border-[#333] border-t-white rounded-full animate-spin" />}
       <p className="text-gray-400 text-sm">Signing you in...</p>
     </div>
   )

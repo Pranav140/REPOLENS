@@ -13,10 +13,12 @@ import AI from './pages/repo/AI'
 import Dependencies from './pages/repo/Dependencies'
 import BlastRadius from './pages/repo/BlastRadius'
 import OnboardingEstimate from './pages/repo/OnboardingEstimate'
+import { useAuth } from './hooks/useAuth'
 
 function PrivateRoute({ children }) {
-  const token = localStorage.getItem('repolens_token')
-  return token ? children : <Navigate to="/login" />
+  const { isAuthenticated, loading } = useAuth()
+  if (loading) return null // still loading
+  return isAuthenticated ? children : <Navigate to="/login" />
 }
 
 export default function App() {
