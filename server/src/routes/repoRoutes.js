@@ -55,7 +55,8 @@ router.post('/import', async (req, res, next) => {
     // Validate that the repo exists on GitHub
     let ghRepo;
     try {
-      ghRepo = await githubService.getRepository(owner, name, req.user.accessToken);
+      const userWithToken = await require('../models/User').findById(req.user._id);
+      ghRepo = await githubService.getRepository(owner, name, userWithToken.accessToken);
     } catch {
       return res
         .status(404)
@@ -93,9 +94,10 @@ router.post('/import', async (req, res, next) => {
 
 router.get('/github-repos', async (req, res, next) => {
   try {
+    const userWithToken = await require('../models/User').findById(req.user._id);
     const { data } = await require('axios').get('https://api.github.com/user/repos?per_page=100&sort=updated', {
       headers: {
-        Authorization: `Bearer ${req.user.accessToken}`,
+        Authorization: `Bearer ${userWithToken.accessToken}`,
         'User-Agent': 'RepoLens',
       },
     });
@@ -302,8 +304,9 @@ router.get('/:owner/:name/blast-radius', async (req, res, next) => {
     const repo = await findRepo(owner, name, req.user._id, res);
     if (!repo) return;
 
+    const userWithToken = await require('../models/User').findById(req.user._id);
     const results = await blastRadiusService.computeBlastRadius(
-      repo._id, repo.owner, repo.name, req.user.accessToken
+      repo._id, repo.owner, repo.name, userWithToken.accessToken
     );
 
     return res.status(200).json({ results });
