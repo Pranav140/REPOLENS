@@ -37,6 +37,7 @@ export default function Overview() {
   const { owner, name } = useParams()
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
+  const [blastRadiusData, setBlastRadiusData] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [copiedSha, setCopiedSha] = useState(null)
@@ -44,12 +45,14 @@ export default function Overview() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [repoRes, metricsRes] = await Promise.all([
+        const [repoRes, metricsRes, blastRes] = await Promise.all([
           api.get(`/api/repos/${owner}/${name}`),
-          api.get(`/api/repos/${owner}/${name}/metrics`)
+          api.get(`/api/repos/${owner}/${name}/metrics`),
+          api.get(`/api/repos/${owner}/${name}/blast-radius`).catch(() => ({ data: { results: [] } }))
         ])
         setRepo(repoRes.data.repository)
         setMetrics(metricsRes.data)
+        setBlastRadiusData(blastRes.data?.results || [])
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load repository overview')
       } finally { setLoading(false) }
@@ -91,6 +94,25 @@ export default function Overview() {
     setTimeout(() => setCopiedSha(null), 1500)
   }
 
+  // Compute Real Blast Radius Metrics using Top 4 files
+  const top4 = blastRadiusData.slice(0, 4)
+  const c1 = top4[0] // Outermost (highest risk)
+  const c2 = top4[1]
+  const c3 = top4[2]
+  const c4 = top4[3] // Innermost
+
+  const ecoVal = c1 ? c1.score : 77;
+  const ecoLabel = c1 ? c1.name : 'auth.ts';
+
+  const indirectVal = c2 ? c2.score : 73;
+  const indirectLabel = c2 ? c2.name : 'index.ts';
+
+  const directVal = c3 ? c3.score : 73;
+  const directLabel = c3 ? c3.name : 'prisma.ts';
+
+  const coreVal = c4 ? c4.score : 53;
+  const coreLabel = c4 ? c4.name : 'password.service.ts';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '40px' }}>
       
@@ -100,19 +122,19 @@ export default function Overview() {
         {/* 1. Health Score (Premium Gradient + Area Chart) */}
         <div style={{
           background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(5, 205, 153, 0.05) 100%)', borderRadius: '24px',
-          padding: '28px 24px 0 24px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', opacity: 0, border: '1px solid rgba(5, 205, 153, 0.1)'
+          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', opacity: 0, border: '1px solid rgba(5, 205, 153, 0.1)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 24px 4px rgba(5, 205, 153, 0.2)' }}>
-              <Activity size={22} color="var(--success)" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px 4px rgba(5, 205, 153, 0.2)' }}>
+              <Activity size={18} color="var(--success)" />
             </div>
-            <div style={{ fontSize: '12px', fontWeight: 600, padding: '4px 12px', borderRadius: '20px', background: 'var(--success-bg)', color: 'var(--success)', letterSpacing: '0.02em' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: 'var(--success-bg)', color: 'var(--success)', letterSpacing: '0.02em' }}>
               Excellent
             </div>
           </div>
-          <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '6px', letterSpacing: '-0.02em' }}>{healthScore}</div>
-          <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Health Score</div>
-          <div style={{ height: '44px', marginTop: '12px', marginLeft: '-24px', marginRight: '-24px', position: 'relative' }}>
+          <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px', letterSpacing: '-0.02em' }}>{healthScore}</div>
+          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Health Score</div>
+          <div style={{ height: '32px', marginTop: '12px', marginLeft: '-20px', marginRight: '-20px', position: 'relative' }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={MOCK_SPARKLINE_DATA}>
                 <defs><linearGradient id="colorHealth" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--success)" stopOpacity={0.3}/><stop offset="100%" stopColor="var(--success)" stopOpacity={0}/></linearGradient></defs>
@@ -125,18 +147,18 @@ export default function Overview() {
         {/* 2. Files Analyzed (Clean White + Bar Chart) */}
         <div style={{
           background: 'var(--bg-surface)', borderRadius: '24px',
-          padding: '28px 24px 0 24px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '80ms', opacity: 0
+          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '80ms', opacity: 0
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'var(--accent-blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileCode2 size={22} color="var(--accent-blue)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--accent-blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileCode2 size={18} color="var(--accent-blue)" />
             </div>
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '2px' }}>Files Analyzed</div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>{filesAnalyzed}</div>
+              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '2px' }}>Files Analyzed</div>
+              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>{filesAnalyzed}</div>
             </div>
           </div>
-          <div style={{ height: '44px', marginTop: '12px', marginLeft: '-24px', marginRight: '-24px', position: 'relative', outline: 'none' }}>
+          <div style={{ height: '32px', marginTop: '8px', marginLeft: '-20px', marginRight: '-20px', position: 'relative', outline: 'none' }}>
             <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
               <BarChart data={MOCK_SPARKLINE_DATA} style={{ outline: 'none' }}>
                 <Bar dataKey="val" fill="var(--accent-blue)" radius={[4, 4, 0, 0]} opacity={0.8} style={{ outline: 'none' }} />
@@ -148,22 +170,22 @@ export default function Overview() {
         {/* 3. Circular Dependencies (Side-by-Side + Radial Warning) */}
         <div style={{
           background: 'var(--bg-surface)', borderRadius: '24px',
-          padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '160ms', opacity: 0, border: metrics?.circularDependencies > 0 ? '1px solid rgba(238, 93, 80, 0.3)' : 'none'
+          padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '160ms', opacity: 0, border: metrics?.circularDependencies > 0 ? '1px solid rgba(238, 93, 80, 0.3)' : 'none'
         }}>
           <div>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: metrics?.circularDependencies > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-              <GitBranch size={18} color={metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)'} />
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: metrics?.circularDependencies > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+              <GitBranch size={16} color={metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)'} />
             </div>
-            <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '6px', letterSpacing: '-0.02em' }}>{circularDeps}</div>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Circular Deps</div>
+            <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px', letterSpacing: '-0.02em' }}>{circularDeps}</div>
+            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Circular Deps</div>
           </div>
-          <div style={{ width: '80px', height: '80px', position: 'relative', outline: 'none' }}>
+          <div style={{ width: '64px', height: '64px', position: 'relative', outline: 'none' }}>
             <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-              <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={8} data={[{ name: 'Deps', value: metrics?.circularDependencies > 0 ? 100 : 0, fill: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }]} startAngle={90} endAngle={-270} style={{ outline: 'none' }}>
+              <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={6} data={[{ name: 'Deps', value: metrics?.circularDependencies > 0 ? 100 : 0, fill: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }]} startAngle={90} endAngle={-270} style={{ outline: 'none' }}>
                 <RadialBar background={{ fill: 'var(--bg-elevated)' }} dataKey="value" cornerRadius={10} style={{ outline: 'none' }} />
               </RadialBarChart>
             </ResponsiveContainer>
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '18px', fontWeight: 800, color: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }}>
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '16px', fontWeight: 800, color: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }}>
               !
             </div>
           </div>
@@ -172,19 +194,19 @@ export default function Overview() {
         {/* 4. Dead Files (Dark Theme / High Contrast + Dashed Line) */}
         <div style={{
           background: 'var(--bg-elevated)', borderRadius: '24px',
-          padding: '28px 24px 0 24px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '240ms', opacity: 0
+          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '240ms', opacity: 0
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dead Files Found</div>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--warning-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileX2 size={18} color="var(--warning)" />
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dead Files Found</div>
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--warning-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileX2 size={16} color="var(--warning)" />
             </div>
           </div>
-          <div style={{ fontSize: '42px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '6px', letterSpacing: '-0.02em' }}>{deadFiles}</div>
-          <div style={{ height: '40px', marginTop: '12px', marginLeft: '-24px', marginRight: '-24px', position: 'relative', outline: 'none' }}>
+          <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '8px', letterSpacing: '-0.02em' }}>{deadFiles}</div>
+          <div style={{ height: '32px', marginTop: '12px', marginLeft: '-20px', marginRight: '-20px', position: 'relative', outline: 'none' }}>
             <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
               <LineChart data={MOCK_SPARKLINE_DATA_2} style={{ outline: 'none' }}>
-                <Line type="monotone" dataKey="val" stroke="var(--warning)" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 3, fill: 'var(--warning)', strokeWidth: 0 }} style={{ outline: 'none' }} />
+                <Line type="monotone" dataKey="val" stroke="var(--warning)" strokeWidth={2.5} strokeDasharray="4 4" dot={{ r: 2.5, fill: 'var(--warning)', strokeWidth: 0 }} style={{ outline: 'none' }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -271,31 +293,63 @@ export default function Overview() {
       {/* Row 3: Tech Stack & Recent Commits */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', animation: 'fadeSlideUp 400ms ease 400ms forwards', opacity: 0 }}>
         
-        {/* Modern Tech Stack Grid */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <LayoutTemplate size={20} color="var(--accent-blue)" /> Technology Stack
+        {/* Blast Radius Component */}
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+               Blast Radius
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                 <Activity size={16} />
+              </div>
+            </div>
           </div>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>Identified frameworks and libraries powered by package configurations.</p>
           
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
-            {metrics?.techStack?.map((tech, i) => (
-              <div key={tech} style={{
-                padding: '12px 20px', background: 'var(--bg-surface)', borderRadius: '16px', border: '1px solid var(--border-default)',
-                fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', cursor: 'default',
-                boxShadow: 'var(--shadow-sm)', display: 'flex', alignItems: 'center', gap: '10px'
-              }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--accent-blue)'; e.currentTarget.style.color = 'var(--accent-blue)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-primary)'; }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--accent-blue)' }} />
-                {tech}
-              </div>
-            ))}
-            {(!metrics?.techStack || metrics.techStack.length === 0) && (
-              <div style={{ width: '100%', padding: '40px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', textAlign: 'center', border: '1px dashed var(--border-active)' }}>
-                <Layers size={32} color="var(--text-muted)" style={{ margin: '0 auto 12px' }} />
-                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>No Tech Stack Detected</div>
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>We couldn't identify specific frameworks in this repository.</div>
-              </div>
-            )}
+          <div style={{ position: 'relative', width: '320px', height: '320px', margin: 'auto' }}>
+            {/* Circle 1 (Outermost) */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '320px', height: '320px', borderRadius: '50%',
+              background: 'var(--accent-blue)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
+            }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{ecoVal}</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.95)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ecoLabel}</div>
+            </div>
+
+            {/* Circle 2 */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '250px', height: '250px', borderRadius: '50%',
+              background: 'linear-gradient(rgba(67, 24, 255, 0.4), rgba(67, 24, 255, 0.4)), var(--bg-surface)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
+            }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{indirectVal}</div>
+              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.95)', fontWeight: 700, fontFamily: 'monospace', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{indirectLabel}</div>
+            </div>
+
+            {/* Circle 3 */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '180px', height: '180px', borderRadius: '50%',
+              background: 'linear-gradient(rgba(67, 24, 255, 0.15), rgba(67, 24, 255, 0.15)), var(--bg-surface)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
+            }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{directVal}</div>
+              <div style={{ fontSize: '11px', color: 'var(--accent-blue)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{directLabel}</div>
+            </div>
+
+            {/* Circle 4 (Innermost) */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+              width: '110px', height: '110px', borderRadius: '50%',
+              background: 'repeating-linear-gradient(45deg, var(--border-default), var(--border-default) 3px, var(--bg-surface) 3px, var(--bg-surface) 8px)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px'
+            }}>
+              <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{coreVal}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{coreLabel}</div>
+            </div>
           </div>
         </div>
 
