@@ -1,46 +1,28 @@
-import { useEffect, useState, useRef } from 'react'
-import { useParams, Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useEffect, useState, useRef, useMemo } from 'react'
+import { useParams, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Star, GitFork, RefreshCw, Trash2, AlertTriangle } from 'lucide-react'
-import Navbar from '../../components/shared/Navbar'
-import {
-  Dialog, DialogContent, DialogHeader,
-  DialogTitle, DialogDescription,
-} from '../../components/ui/dialog'
+import { Star, GitFork, RefreshCw, Trash2, Sun, Moon, LogOut } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../../components/ui/dialog'
 import api from '../../api/api'
-
-const NAV_LINKS = [
-  { to: 'overview',     label: 'Overview'      },
-  { to: 'graph',        label: 'Graph'         },
-  { to: 'health',       label: 'Health'        },
-  { to: 'search',       label: 'Search'        },
-  { to: 'security',     label: 'Security'      },
-  { to: 'ai',           label: 'AI Tools'      },
-  { to: 'dependencies', label: 'Dependencies'  },
-  { to: 'blast-radius', label: 'Blast Radius'  },
-  { to: 'onboarding-estimate', label: 'Onboarding Time' },
-]
-
-const STATUS_STYLES = {
-  pending:   'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-  analyzing: 'bg-blue-500/10   text-blue-400   border-blue-500/20',
-  completed: 'bg-green-500/10  text-green-400  border-green-500/20',
-  failed:    'bg-red-500/10    text-red-400    border-red-500/20',
-}
+import CardNav from '../../components/shared/CardNav/CardNav'
+import { useAuth } from '../../hooks/useAuth'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function RepoLayout() {
   const { owner, name } = useParams()
   const navigate = useNavigate()
+  
+  const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
 
-  const [repo,        setRepo]        = useState(null)
-  const [status,      setStatus]      = useState('pending')
+  const [repo, setRepo] = useState(null)
+  const [status, setStatus] = useState('pending')
   const [loadingRepo, setLoadingRepo] = useState(true)
-  const [deleteDialog,setDeleteDialog]= useState(false)
-  const [deleting,    setDeleting]    = useState(false)
+  const [deleteDialog, setDeleteDialog] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [reanalyzing, setReanalyzing] = useState(false)
   const pollRef = useRef(null)
 
-  /* ── Fetch repo ─────────────────────────────────────────────────── */
   async function fetchRepo() {
     try {
       const res = await api.get(`/api/repos/${owner}/${name}`)
@@ -54,7 +36,6 @@ export default function RepoLayout() {
     }
   }
 
-  /* ── Status polling ──────────────────────────────────────────────── */
   function startPolling() {
     if (pollRef.current) return
     pollRef.current = setInterval(async () => {
@@ -72,20 +53,19 @@ export default function RepoLayout() {
           pollRef.current = null
           toast.error('Analysis failed')
         }
-      } catch { /* network blip — keep polling */ }
+      } catch { /* ignore */ }
     }, 3000)
   }
 
   useEffect(() => {
     fetchRepo()
     return () => { if (pollRef.current) clearInterval(pollRef.current) }
-  }, [owner, name]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [owner, name])
 
   useEffect(() => {
     if (status === 'pending' || status === 'analyzing') startPolling()
-  }, [status]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status])
 
-  /* ── Reanalyze ───────────────────────────────────────────────────── */
   async function handleReanalyze() {
     setReanalyzing(true)
     try {
@@ -99,7 +79,6 @@ export default function RepoLayout() {
     }
   }
 
-  /* ── Delete ──────────────────────────────────────────────────────── */
   async function handleDelete() {
     setDeleting(true)
     try {
@@ -113,245 +92,181 @@ export default function RepoLayout() {
     }
   }
 
-  /* ── Loading spinner ─────────────────────────────────────────────── */
+  const getStatusColor = () => {
+    if (status === 'completed') return 'var(--success)'
+    if (status === 'failed') return 'var(--danger)'
+    if (status === 'analyzing') return 'var(--accent-blue)'
+    return 'var(--warning)'
+  }
+
+  const navItems = useMemo(() => [
+    {
+      label: "Insights",
+      bgColor: "#1B1722",
+      textColor: "#ffffff",
+      links: [
+        { label: "Overview", href: `/repo/${owner}/${name}/overview` },
+        { label: "Graph", href: `/repo/${owner}/${name}/graph` },
+        { label: "Search", href: `/repo/${owner}/${name}/search` }
+      ]
+    },
+    {
+      label: "Health",
+      bgColor: "#2F293A",
+      textColor: "#ffffff",
+      links: [
+        { label: "Health", href: `/repo/${owner}/${name}/health` },
+        { label: "Security", href: `/repo/${owner}/${name}/security` },
+        { label: "Dependencies", href: `/repo/${owner}/${name}/dependencies` }
+      ]
+    },
+    {
+      label: "Analysis",
+      bgColor: "#2F293A",
+      textColor: "#ffffff",
+      links: [
+        { label: "AI Tools", href: `/repo/${owner}/${name}/ai` },
+        { label: "Blast Radius", href: `/repo/${owner}/${name}/blast-radius` },
+        { label: "Onboarding Time", href: `/repo/${owner}/${name}/onboarding-estimate` }
+      ]
+    }
+  ], [owner, name]);
+
+  const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : 'RL'
+
   if (loadingRepo) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#333] border-t-white rounded-full animate-spin" />
+      <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '2px solid var(--border-default)', borderTopColor: 'var(--accent-blue)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     )
   }
 
-  /* ── Analyzing overlay ───────────────────────────────────────────── */
-  if (status === 'pending' || status === 'analyzing') {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-        <Navbar />
-        <style>{`
-          @keyframes progressBar {
-            0% { width: 0%; }
-            20% { width: 25%; }
-            50% { width: 60%; }
-            80% { width: 80%; }
-            95% { width: 92%; }
-          }
-          @keyframes stepFade {
-            from { opacity: 0; transform: translateX(-8px); }
-            to { opacity: 1; transform: translateX(0); }
-          }
-        `}</style>
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(10,10,10,0.97)',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          zIndex: 200
-        }}>
-          <div style={{ 
-            fontFamily: 'monospace', maxWidth: '360px',
-            width: '100%'
-          }}>
-            <div style={{ 
-              color: '#3b82f6', fontSize: '12px', 
-              letterSpacing: '0.15em', marginBottom: '24px'
-            }}>
-              ANALYZING REPOSITORY
-            </div>
-            
-            {/* Progress bar */}
-            <div style={{ 
-              background: '#1a1a1a', borderRadius: '2px', 
-              height: '2px', marginBottom: '32px'
-            }}>
-              <div style={{
-                height: '100%', borderRadius: '2px',
-                background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)',
-                animation: 'progressBar 60s ease forwards',
-                boxShadow: '0 0 8px rgba(59,130,246,0.6)'
-              }}/>
-            </div>
-            
-            {/* Steps */}
-            {[
-              'cloning repository tree',
-              'extracting file contents', 
-              'parsing imports and exports',
-              'building dependency graph',
-              'detecting circular dependencies',
-              'computing health metrics',
-              'identifying dead code',
-              'finalizing analysis'
-            ].map((step, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                marginBottom: '8px', fontSize: '12px',
-                animation: `stepFade 0.3s ease forwards`,
-                animationDelay: `${i * 1.5}s`,
-                opacity: 0
-              }}>
-                <span style={{ color: '#3b82f6' }}>→</span>
-                <span style={{ color: '#555' }}>{step}</span>
-              </div>
-            ))}
-          </div>
+  const LeftContent = (
+    <div className="logo-container" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+      <div className="logo-dot" />
+      <span className="logo-text">RepoLens</span>
+    </div>
+  )
+
+  const CenterContent = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+        {owner} / {name}
+      </h1>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 8px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-default)' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: getStatusColor(), animation: status === 'analyzing' ? 'pulseGlow 1.5s infinite' : 'none', '--glow-color': getStatusColor() }} />
+        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{status}</span>
+      </div>
+    </div>
+  )
+
+  const RightContent = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      
+      {/* Stats & Actions Pill */}
+      <div style={{ 
+        display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', 
+        borderRadius: 'var(--radius-full)', padding: '4px 6px', gap: '4px', 
+        border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)'
+      }} className="hidden md:flex">
+        
+        {/* Stats */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 10px', color: 'var(--text-secondary)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}><Star size={14} />{repo?.stars ?? 0}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}><GitFork size={14} />{repo?.forks ?? 0}</span>
         </div>
-      </div>
-    )
-  }
 
-  /* ── Failed state ────────────────────────────────────────────────── */
-  if (status === 'failed') {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertTriangle size={26} className="text-red-400" />
-          </div>
-          <div className="text-center">
-            <h2 className="text-lg font-semibold text-white">Analysis Failed</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Something went wrong while analyzing this repository.
-            </p>
-          </div>
-          <button
-            onClick={handleReanalyze}
-            disabled={reanalyzing}
-            className="px-5 py-2 rounded-lg bg-white text-black text-sm font-semibold
-                       hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-40"
-          >
-            {reanalyzing ? 'Starting…' : 'Retry Analysis'}
-          </button>
-        </div>
-      </div>
-    )
-  }
+        <div style={{ width: '1px', height: '14px', background: 'var(--border-active)' }} />
 
-  const statusStyle = STATUS_STYLES[status] || STATUS_STYLES.completed
+        {/* Actions */}
+        <button 
+          onClick={handleReanalyze} disabled={reanalyzing} 
+          style={{ padding: '6px 14px', borderRadius: 'var(--radius-full)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', border: 'none', boxShadow: 'var(--shadow-sm)' }}
+          onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
+          onMouseLeave={e => e.currentTarget.style.opacity = 1}
+        >
+          <RefreshCw size={13} className={reanalyzing ? 'animate-spin' : ''} /> 
+          <span className="hidden lg:inline">Reanalyze</span>
+        </button>
+        <button 
+          onClick={() => setDeleteDialog(true)} 
+          style={{ padding: '6px', borderRadius: '50%', background: 'var(--danger-bg)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', border: 'none', marginLeft: '2px' }} 
+          title="Delete"
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(238, 93, 80, 0.2)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--danger-bg)'}
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        style={{
+          width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--border-default)',
+          background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)', marginLeft: '8px'
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-active)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-overlay)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'var(--bg-elevated)' }}
+      >
+        {theme === 'dark' ? <Sun size={15} style={{ transition: 'transform 400ms', transform: 'rotate(360deg)' }} /> : <Moon size={15} style={{ transition: 'transform 400ms', transform: 'rotate(360deg)' }} />}
+      </button>
+
+      {/* User Avatar */}
+      <div 
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', borderRadius: '50%', cursor: 'pointer', transition: 'all var(--transition-fast)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }} 
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-overlay)' }} 
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)' }}
+      >
+        {user?.avatarUrl ? (
+          <img src={user.avatarUrl} alt={user.username} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+        ) : (
+          <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600', color: 'var(--text-primary)' }}>{initials}</div>
+        )}
+      </div>
+      <button 
+        onClick={(e) => { e.stopPropagation(); logout() }} 
+        style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'transparent', border: 'none', padding: '4px' }} 
+        title="Logout"
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--danger)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+      >
+        <LogOut size={16} />
+      </button>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      <Navbar />
-
-      {/* ── Repo header strip ─────────────────────────────────────── */}
-      <div className="pt-14 border-b border-[#222] bg-[#0a0a0a]">
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-sm font-semibold text-white truncate">{owner}/{name}</h1>
-              <span className={`text-xs px-2 py-0.5 rounded-full border ${statusStyle}`}>
-                {status}
-              </span>
-            </div>
-            {repo?.description && (
-              <p className="text-xs text-gray-500 mt-0.5 truncate">{repo.description}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500 shrink-0">
-            <span className="flex items-center gap-1"><Star size={11} />{repo?.stars ?? 0}</span>
-            <span className="flex items-center gap-1"><GitFork size={11} />{repo?.forks ?? 0}</span>
-            <button
-              onClick={handleReanalyze}
-              disabled={reanalyzing}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#333]
-                         text-gray-400 hover:text-white hover:border-[#444] transition-colors
-                         cursor-pointer disabled:opacity-40"
-            >
-              <RefreshCw size={11} className={reanalyzing ? 'animate-spin' : ''} />
-              Reanalyze
-            </button>
-            <button
-              onClick={() => setDeleteDialog(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[#333]
-                         text-red-400 hover:border-red-500/40 transition-colors cursor-pointer"
-            >
-              <Trash2 size={11} />
-              Delete
-            </button>
-          </div>
-        </div>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Combined Top Navbar via CardNav */}
+      <div style={{ padding: '16px 24px', position: 'sticky', top: 0, zIndex: 100 }}>
+        <CardNav 
+          items={navItems}
+          leftContent={LeftContent}
+          centerContent={CenterContent}
+          rightContent={RightContent}
+        />
       </div>
 
-      {/* ── Layout body ───────────────────────────────────────────── */}
-      <div className="flex flex-1 max-w-screen-2xl mx-auto w-full min-h-0">
+      {/* Main content body */}
+      <main style={{ flex: 1, maxWidth: '1400px', margin: '0 auto', width: '100%', padding: '24px 40px 40px 40px' }}>
+        <Outlet />
+      </main>
 
-        {/* Desktop sidebar — hidden on mobile */}
-        <nav className="hidden md:flex flex-col w-56 shrink-0 border-r border-[#222] py-4 px-3 gap-0.5">
-          {NAV_LINKS.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: '10px',
-                padding: '8px 12px', borderRadius: '6px',
-                fontSize: '13px', textDecoration: 'none',
-                color: isActive ? '#ffffff' : '#666',
-                background: isActive ? '#1a1a1a' : 'transparent',
-                borderLeft: isActive 
-                  ? '2px solid #3b82f6' : '2px solid transparent',
-                transition: 'all 0.15s ease',
-                marginBottom: '2px'
-              })}
-            >
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Mobile horizontal scrollable tab bar — hidden on desktop */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0a0a0a] border-t border-[#222]">
-          <div className="flex overflow-x-auto scrollbar-hide px-2 py-1 gap-1">
-            {NAV_LINKS.map(({ to, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                className={({ isActive }) =>
-                  `shrink-0 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-colors ${
-                    isActive
-                      ? 'bg-[#222] text-white font-medium'
-                      : 'text-gray-500 hover:text-white'
-                  }`
-                }
-              >
-                {label}
-              </NavLink>
-            ))}
-          </div>
-        </div>
-
-        {/* Page content */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6 pb-20 md:pb-6">
-          <Outlet />
-        </main>
-      </div>
-
-      {/* ── Delete confirm dialog ─────────────────────────────────── */}
+      {/* Delete Dialog */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
-        <DialogContent className="bg-[#111] border-[#222] text-white max-w-sm">
+        <DialogContent style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}>
           <DialogHeader>
-            <DialogTitle className="text-white">Delete Repository?</DialogTitle>
-            <DialogDescription className="text-gray-500">
-              This will permanently delete{' '}
-              <strong className="text-white">{owner}/{name}</strong> and all its
-              analysis data. This action cannot be undone.
+            <DialogTitle style={{ color: 'var(--text-primary)' }}>Delete Repository?</DialogTitle>
+            <DialogDescription style={{ color: 'var(--text-secondary)' }}>
+              This will permanently delete <strong>{owner}/{name}</strong> and all its analysis data. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              onClick={() => setDeleteDialog(false)}
-              className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white
-                         hover:bg-[#1e1e1e] transition-colors cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold
-                         hover:bg-red-600 transition-colors cursor-pointer disabled:opacity-40"
-            >
-              {deleting ? 'Deleting…' : 'Delete'}
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            <button onClick={() => setDeleteDialog(false)} style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-elevated)', color: 'var(--text-primary)', border: 'none', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
+            <button onClick={handleDelete} disabled={deleting} style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', background: 'var(--danger)', color: '#fff', border: 'none', fontWeight: 600, cursor: 'pointer' }}>{deleting ? 'Deleting...' : 'Delete'}</button>
           </div>
         </DialogContent>
       </Dialog>

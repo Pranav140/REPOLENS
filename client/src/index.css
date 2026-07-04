@@ -1,8 +1,8 @@
-@import '@fontsource/plus-jakarta-sans/400.css';
-@import '@fontsource/plus-jakarta-sans/500.css';
-@import '@fontsource/plus-jakarta-sans/600.css';
-@import '@fontsource/plus-jakarta-sans/700.css';
-@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/outfit/400.css';
+@import '@fontsource/outfit/500.css';
+@import '@fontsource/outfit/600.css';
+@import '@fontsource/outfit/700.css';
+@import '@fontsource/outfit/800.css';
 
 @tailwind base;
 @tailwind components;
@@ -82,7 +82,7 @@
   body {
     background-color: var(--bg-base);
     color: var(--text-primary);
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Outfit', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     margin: 0;
     padding: 0;
@@ -113,5 +113,22 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-  *:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+  *:focus-visible { outline: none !important; }
+  
+  /* Disable focus outlines globally on all Recharts interactive elements */
+  *:focus, *:active {
+    outline: none !important;
+  }
+  
+  svg:focus, svg:active, g:focus, g:active, path:focus, path:active {
+    outline: none !important;
+  }
+
+  .recharts-wrapper, 
+  .recharts-surface, 
+  .recharts-responsive-container,
+  .recharts-wrapper * {
+    outline: none !important;
+    border: none !important;
+  }
 }
