@@ -1,40 +1,117 @@
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /* LIGHT THEME DEFAULT (Modern SaaS look) */
   :root {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 14%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14%;
-    --muted-foreground: 0 0% 55%;
-    --accent: 0 0% 14%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 13%;
-    --input: 0 0% 13%;
-    --ring: 0 0% 40%;
-    --radius: 0.5rem;
+    --bg-base: #F4F7FE;
+    --bg-surface: #FFFFFF;
+    --bg-elevated: #F9FAFB;
+    --bg-overlay: #FFFFFF;
+    
+    --border-subtle: #F1F5F9;
+    --border-default: #E2E8F0;
+    --border-active: #CBD5E1;
+    --border-accent: #4318FF;
+    
+    --text-primary: #1B254B;
+    --text-secondary: #A3AED0;
+    --text-muted: #CBD5E1;
+    --text-link: #4318FF;
+    
+    --accent-blue: #4318FF;
+    --accent-blue-h: #3914D9;
+    --accent-blue-s: #6AD2FF;
+    --accent-blue-bg: rgba(67, 24, 255, 0.08);
+    
+    --success: #05CD99;
+    --success-bg: rgba(5, 205, 153, 0.1);
+    
+    --warning: #FFCE20;
+    --warning-bg: rgba(255, 206, 32, 0.1);
+    
+    --danger: #EE5D50;
+    --danger-bg: rgba(238, 93, 80, 0.1);
+    
+    --neutral: #8F9BBA;
+    --neutral-bg: rgba(143, 155, 186, 0.1);
+    
+    /* Vibrant gradients for modern look */
+    --grad-blue: linear-gradient(135deg, #4318FF 0%, #3914D9 100%);
+    --grad-purple: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
+    --grad-orange: linear-gradient(135deg, #FFB547 0%, #FF8A4C 100%);
+    --grad-green: linear-gradient(135deg, #05CD99 0%, #01B574 100%);
+    
+    /* Soft, large shadows */
+    --shadow-sm: 0px 4px 10px rgba(112, 144, 176, 0.08);
+    --shadow-md: 0px 18px 40px rgba(112, 144, 176, 0.12);
+    --shadow-lg: 0px 40px 58px -20px rgba(112, 144, 176, 0.15);
+    --shadow-glow-blue: 0 0 0 3px rgba(67, 24, 255, 0.2);
+    
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
   }
 
-  * {
-    border-color: hsl(var(--border));
-    box-sizing: border-box;
+  /* DARK THEME */
+  :root[data-theme="dark"] {
+    --bg-base: #0B1437;
+    --bg-surface: #111C44;
+    --bg-elevated: #1A2753;
+    --bg-overlay: #111C44;
+    --border-subtle: #1A2753;
+    --border-default: #2B3674;
+    --text-primary: #FFFFFF;
+    --text-secondary: #A3AED0;
+    --shadow-md: 0px 18px 40px rgba(0, 0, 0, 0.2);
   }
+
+  * { box-sizing: border-box; }
+
+  html { transition: background-color 300ms ease, color 300ms ease; }
 
   body {
-    background-color: #0a0a0a;
-    color: hsl(var(--foreground));
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0;
   }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(8px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -400px 0; }
+    100% { background-position: 400px 0; }
+  }
+  @keyframes progressFill {
+    from { width: 0%; }
+    to { width: var(--target-width); }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--glow-color); opacity: 1; }
+    50% { box-shadow: 0 0 0 6px transparent; opacity: 0.8; }
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+  *:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 }
