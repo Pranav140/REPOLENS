@@ -11,23 +11,23 @@
 @layer base {
   /* LIGHT THEME DEFAULT (Modern SaaS look) */
   :root {
-    --bg-base: #F4F7FE;
+    --bg-base: #F4F7FC;
     --bg-surface: #FFFFFF;
-    --bg-elevated: #F9FAFB;
+    --bg-elevated: #F8FAFC;
     --bg-overlay: #FFFFFF;
     
     --border-subtle: #F1F5F9;
     --border-default: #E2E8F0;
     --border-active: #CBD5E1;
-    --border-accent: #4318FF;
+    --border-accent: #00FF26;
     
-    --text-primary: #1B254B;
-    --text-secondary: #A3AED0;
-    --text-muted: #CBD5E1;
-    --text-link: #4318FF;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --text-link: #3178C6;
     
-    --accent-blue: #4318FF;
-    --accent-blue-h: #3914D9;
+    --accent-blue: #3178C6;
+    --accent-blue-h: #2563EB;
     --accent-blue-s: #6AD2FF;
     --accent-blue-bg: rgba(67, 24, 255, 0.08);
     
@@ -64,15 +64,19 @@
 
   /* DARK THEME */
   :root[data-theme="dark"] {
-    --bg-base: #0B1437;
-    --bg-surface: #111C44;
-    --bg-elevated: #1A2753;
-    --bg-overlay: #111C44;
-    --border-subtle: #1A2753;
-    --border-default: #2B3674;
+    --bg-base: #0A0C10;
+    --bg-surface: #12161E;
+    --bg-elevated: #1A1F2B;
+    --bg-overlay: #12161E;
+    --border-subtle: rgba(255,255,255,0.03);
+    --border-default: rgba(255,255,255,0.07);
+    --border-active: rgba(255,255,255,0.15);
     --text-primary: #FFFFFF;
-    --text-secondary: #A3AED0;
-    --shadow-md: 0px 18px 40px rgba(0, 0, 0, 0.2);
+    --text-secondary: #9CA3AF;
+    --text-muted: #6B7280;
+    --shadow-md: 0px 18px 40px rgba(0, 0, 0, 0.4);
+    --accent-blue: #00FF26;
+    --accent-blue-h: #BBE663;
   }
 
   * { box-sizing: border-box; }
