@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Search as SearchIcon, FileCode2, Code2, Box, X } from 'lucide-react'
+import { Search as SearchIcon, FileCode2, Code2, Box, X, ExternalLink } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs'
 import { Badge } from '../../components/ui/badge'
 import { Skeleton } from '../../components/ui/skeleton'
@@ -317,9 +317,18 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
 
           {/* File Content Preview */}
           <div className="mt-6">
-            <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
-              File Content
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                File Content
+              </p>
+              <button
+                onClick={() => window.open(`https://github.com/${owner}/${name}/blob/main/${file.path}`, '_blank')}
+                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-2 py-1 rounded-md"
+              >
+                <span>View Full File</span>
+                <ExternalLink size={12} />
+              </button>
+            </div>
             <div className="bg-[#050505] rounded-xl border border-[#ffffff10] relative overflow-hidden">
               {contentLoading ? (
                 <div className="p-4 space-y-2">
