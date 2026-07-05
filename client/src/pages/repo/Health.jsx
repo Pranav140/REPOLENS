@@ -145,7 +145,10 @@ export default function Health() {
         setFiles(fR.data || [])
         setHotspots(hR.data.hotspots || [])
       } catch (e) {
-        setError(e.response?.data?.message || 'Failed to load health data')
+        console.error('HEALTH FETCH ERROR:', e)
+        const errMsg = e.response?.data?.message || e.message || String(e)
+        const status = e.response?.status ? ` (Status: ${e.response.status})` : ''
+        setError(`Failed to load health data: ${errMsg}${status}`)
       } finally { setLoading(false) }
     }
     go()
