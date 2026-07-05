@@ -64,7 +64,7 @@ const CardNav = ({
     const tl = gsap.timeline({ paused: true });
 
     tl.to(navEl, {
-      height: calculateHeight,
+      height: calculateHeight(),
       duration: 0.4,
       ease
     });
