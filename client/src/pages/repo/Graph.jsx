@@ -523,7 +523,10 @@ function GraphInner() {
         style={{ background: '#0a0a0a' }}
         proOptions={{ hideAttribution: true }}
       >
-        <Controls className="[&>button]:bg-[#181818] [&>button]:border-[#333] [&>button]:text-gray-400 [&>button:hover]:bg-[#222]" />
+        <Controls 
+          className="bg-[#1e1e1e] border border-[#333] rounded-md shadow-xl overflow-hidden [&>button]:bg-[#1e1e1e] [&>button]:border-b [&>button]:border-[#333] [&>button:last-child]:border-0 [&>button:hover]:bg-[#2a2a2a] [&>button>svg]:fill-gray-300 [&>button:hover>svg]:fill-white" 
+          showInteractive={false}
+        />
         <MiniMap
           nodeColor={n => n.data?.isDead ? '#ef4444' : '#3b82f6'}
           maskColor="rgba(0,0,0,0.7)"
