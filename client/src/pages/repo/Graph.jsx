@@ -79,7 +79,9 @@ function GraphInner() {
         const rfEdges = apiEdges.map(e => ({
           id: `${e.source}->${e.target}`,
           source: e.source, target: e.target,
-          style: { stroke: '#444', strokeWidth: 1 },
+          type: 'smoothstep',
+          style: { stroke: '#555', strokeWidth: 1.5 },
+          animated: true,
         }))
         const laid = applyLayout(rfNodes, rfEdges)
         setNodes(laid)
@@ -119,6 +121,15 @@ function GraphInner() {
           maxZoom: 0.8,
         })
       }, 300)
+      return () => clearTimeout(timer)
+    } else if (!highlightPath && nodes.length > 0) {
+      const timer = setTimeout(() => {
+        fitView({
+          duration: 800,
+          padding: 0.2,
+          maxZoom: 1.2,
+        })
+      }, 150)
       return () => clearTimeout(timer)
     }
   }, [nodes, searchParams, fitView, owner, name])
@@ -175,10 +186,10 @@ function GraphInner() {
         const isConnectedToSelected = selectedNode && (e.source === selectedNode.path || e.target === selectedNode.path)
         
         return isTraced
-          ? { ...e, style: { stroke: '#3b82f6', strokeWidth: 2.5 }, animated: true }
+          ? { ...e, type: 'smoothstep', style: { stroke: '#3b82f6', strokeWidth: 2.5 }, animated: true }
           : isConnectedToSelected
-          ? { ...e, style: { stroke: '#f97316', strokeWidth: 2 }, animated: true }
-          : { ...e, style: { stroke: '#444', strokeWidth: 1 }, animated: false }
+          ? { ...e, type: 'smoothstep', style: { stroke: '#f97316', strokeWidth: 2.5 }, animated: true }
+          : { ...e, type: 'smoothstep', style: { stroke: '#555', strokeWidth: 1.5, opacity: 0.6 }, animated: true }
       })
   }, [edges, filteredNodes, tracePath, selectedNode])
 
@@ -498,24 +509,27 @@ function GraphInner() {
       {/* ── ReactFlow canvas ──────────────────────────────────────────── */}
       <ReactFlow
         nodes={filteredNodes}
-        edges={filteredEdges}
+        edges={filteredEdges.map(e => ({ ...e, type: 'smoothstep' }))}
         nodeTypes={NODE_TYPES}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         fitView
-        minZoom={0.05}
-        maxZoom={2}
+        fitViewOptions={{ padding: 0.2, maxZoom: 1.2, duration: 800 }}
+        minZoom={0.1}
+        maxZoom={3}
+        defaultEdgeOptions={{ animated: true, type: 'smoothstep', style: { stroke: '#555', strokeWidth: 1.5 } }}
         style={{ background: '#0a0a0a' }}
+        proOptions={{ hideAttribution: true }}
       >
-        <Controls className="[&>button]:bg-[#111] [&>button]:border-[#333] [&>button]:text-gray-400" />
+        <Controls className="[&>button]:bg-[#181818] [&>button]:border-[#333] [&>button]:text-gray-400 [&>button:hover]:bg-[#222]" />
         <MiniMap
-          nodeColor={n => n.data?.isDead ? '#7f1d1d' : '#1d4ed8'}
-          maskColor="rgba(0,0,0,0.85)"
-          style={{ background: '#111', border: '1px solid #222' }}
+          nodeColor={n => n.data?.isDead ? '#ef4444' : '#3b82f6'}
+          maskColor="rgba(0,0,0,0.7)"
+          style={{ background: '#111', border: '1px solid #333', borderRadius: '8px' }}
         />
-        <Background color="#1a1a1a" gap={24} variant="dots" />
+        <Background color="#2a2a2a" gap={24} variant="dots" size={2} />
       </ReactFlow>
     </div>
   )
