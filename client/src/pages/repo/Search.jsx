@@ -54,50 +54,61 @@ export default function Search() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-3xl mx-auto mt-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {/* Header / Hero */}
+      <div className="text-center space-y-2 mb-8">
+        <h1 className="text-3xl font-bold text-white tracking-tight">Code Search</h1>
+        <p className="text-gray-400 text-sm">Find files, functions, and classes instantly across the repository.</p>
+      </div>
+
       {/* Search input */}
-      <div className="relative">
-        <SearchIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+      <div className="relative group">
+        <SearchIcon size={22} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-white transition-colors" />
         <input
           type="text"
-          placeholder="Search files, functions, classes..."
+          placeholder="Search for anything..."
           value={query}
           onChange={e => setQuery(e.target.value)}
-          className="w-full pl-9 pr-9 py-2.5 rounded-lg bg-[#111] border border-[#333]
-                     text-white text-sm placeholder:text-gray-600
-                     focus:outline-none focus:border-[#444] transition-colors"
+          className="w-full pl-14 pr-12 py-4 rounded-2xl bg-[#0a0a0a]/80 backdrop-blur-xl border border-[#ffffff15]
+                     text-white text-lg placeholder:text-gray-600 shadow-2xl
+                     focus:outline-none focus:border-[#555] focus:ring-4 focus:ring-[#ffffff05] transition-all"
         />
         {query && (
           <button
             onClick={() => { setQuery(''); setResults([]) }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white cursor-pointer"
+            className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white cursor-pointer bg-[#ffffff10] hover:bg-[#ffffff20] p-1.5 rounded-full transition-colors"
           >
-            <X size={14} />
+            <X size={16} />
           </button>
         )}
       </div>
 
-      {/* Type tabs */}
+      {/* Type tabs & Results Meta */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <Tabs value={typeFilter} onValueChange={v => { setTypeFilter(v); setResults([]) }}>
-        <TabsList className="bg-[#111] border border-[#222]">
+        <TabsList className="bg-[#0a0a0a] border border-[#ffffff10] rounded-xl p-1 shadow-inner h-11">
           {['all','file','function','class'].map(t => (
             <TabsTrigger
               key={t}
               value={t}
-              className="capitalize text-gray-400 data-[state=active]:bg-[#222] data-[state=active]:text-white"
+              className="capitalize text-gray-400 font-medium px-4 data-[state=active]:bg-[#252525] data-[state=active]:text-white rounded-lg transition-all"
             >
-              {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1) + 's'}
+              {t === 'all' ? 'All Types' : t.charAt(0).toUpperCase() + t.slice(1) + 's'}
             </TabsTrigger>
           ))}
         </TabsList>
       </Tabs>
 
       {/* Result count */}
-      {results.length > 0 && (
-        <p className="text-xs text-gray-500">
-          {results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;
-        </p>
-      )}
+      <div className="text-sm text-gray-500 font-medium px-2">
+        {results.length > 0 ? (
+          <span>Found <span className="text-white">{results.length}</span> result{results.length !== 1 ? 's' : ''}</span>
+        ) : query.length >= 2 && !isLoading ? (
+          <span>No results</span>
+        ) : null}
+      </div>
+    </div>
 
       {/* Loading skeletons */}
       {isLoading && (
@@ -116,27 +127,29 @@ export default function Search() {
 
       {/* Results list */}
       {!isLoading && !error && results.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {results.map((r, i) => (
             <button
               key={`${r.path}-${r.name}-${i}`}
               onClick={() => setSelectedFile(r)}
-              className="w-full rounded-xl border border-[#222] bg-[#111] p-4
-                         flex items-center gap-3 text-left
-                         hover:border-[#333] hover:bg-[#161616] transition-all cursor-pointer"
+              className="w-full rounded-2xl border border-[#ffffff10] bg-[#0a0a0a]/50 p-5
+                         flex items-center gap-4 text-left shadow-sm backdrop-blur-sm
+                         hover:border-[#ffffff25] hover:bg-[#1a1a1a]/80 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group"
             >
-              {TYPE_ICON[r.type] || <FileCode2 size={15} className="text-gray-500 shrink-0" />}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{r.name}</p>
-                <p className="text-xs text-gray-500 truncate">{r.path}</p>
+              <div className="p-2.5 bg-[#ffffff05] rounded-xl group-hover:bg-[#ffffff10] transition-colors shrink-0">
+                {TYPE_ICON[r.type] || <FileCode2 size={18} className="text-gray-500" />}
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-bold text-gray-200 group-hover:text-white truncate transition-colors">{r.name}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5 font-mono">{r.path}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 {r.language && (
-                  <span className="text-xs px-2 py-0.5 rounded-full border border-[#333] text-gray-400">
+                  <span className="text-[10px] px-2.5 py-1 rounded-md bg-[#ffffff08] border border-[#ffffff10] text-gray-400 uppercase tracking-wider font-medium">
                     {r.language}
                   </span>
                 )}
-                <span className={`text-xs px-2 py-0.5 rounded-full border ${TYPE_COLOR[r.type] || 'border-[#333] text-gray-400'}`}>
+                <span className={`text-[10px] px-2.5 py-1 rounded-md border uppercase tracking-wider font-medium ${TYPE_COLOR[r.type] || 'border-[#333] text-gray-400'}`}>
                   {r.type}
                 </span>
               </div>
@@ -147,21 +160,29 @@ export default function Search() {
 
       {/* Empty states */}
       {!isLoading && error && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center bg-[#0a0a0a]/30 rounded-3xl border border-red-500/10">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
+            <X size={24} className="text-red-400" />
+          </div>
+          <p className="text-red-400 text-sm font-medium">{error}</p>
         </div>
       )}
       {!isLoading && results.length === 0 && query.length >= 2 && !error && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <SearchIcon size={32} className="text-gray-700 mb-3" />
-          <p className="text-gray-500 text-sm">No results for &ldquo;{query}&rdquo;</p>
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-[#0a0a0a]/30 rounded-3xl border border-[#ffffff05] border-dashed">
+          <div className="w-20 h-20 rounded-full bg-[#ffffff05] flex items-center justify-center mb-6 ring-8 ring-[#ffffff02]">
+            <SearchIcon size={32} className="text-gray-600" />
+          </div>
+          <p className="text-white text-lg font-medium tracking-tight mb-2">No results found</p>
+          <p className="text-gray-500 text-sm max-w-sm">We couldn't find anything matching &ldquo;{query}&rdquo;. Try adjusting your search terms or filters.</p>
         </div>
       )}
       {!isLoading && query.length < 2 && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <SearchIcon size={32} className="text-gray-700 mb-3" />
-          <p className="text-gray-500 text-sm">Search files, functions, and classes...</p>
-          <p className="text-gray-700 text-xs mt-1">Type at least 2 characters</p>
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-[#0a0a0a]/30 rounded-3xl border border-[#ffffff05] border-dashed">
+           <div className="w-20 h-20 rounded-full bg-[#ffffff05] flex items-center justify-center mb-6 ring-8 ring-[#ffffff02]">
+            <Code2 size={32} className="text-gray-600" />
+          </div>
+          <p className="text-white text-lg font-medium tracking-tight mb-2">Start searching</p>
+          <p className="text-gray-500 text-sm max-w-sm">Type at least 2 characters to search across all files, functions, and classes in this repository.</p>
         </div>
       )}
 
