@@ -57,6 +57,32 @@ function GraphInner() {
   const [panelOpen,   setPanelOpen]   = useState(true)
   const [blastRadiusData, setBlastRadiusData] = useState(null)
 
+  // ── Drag Logic ─────────────────────────────────────────────────────────────
+  const [panelPos, setPanelPos] = useState({ x: 0, y: 0 })
+  const dragRef = useRef({ isDragging: false, startX: 0, startY: 0, initialX: 0, initialY: 0 })
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!dragRef.current.isDragging) return
+      setPanelPos({
+        x: dragRef.current.initialX + (e.clientX - dragRef.current.startX),
+        y: dragRef.current.initialY + (e.clientY - dragRef.current.startY)
+      })
+    }
+    const handleUp = () => {
+      if (dragRef.current.isDragging) {
+        dragRef.current.isDragging = false
+        document.body.style.userSelect = ''
+      }
+    }
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+    return () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+  }, [])
+
   // ── fetch ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     api.get(`/api/graph/${owner}/${name}`)
@@ -343,10 +369,23 @@ function GraphInner() {
 
       {/* ── Right panel — hidden on mobile unless panelOpen ──────────── */}
       {selectedNode && panelOpen && (
-        <div className="absolute right-0 top-0 h-full w-80 z-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-l border-[#ffffff10] p-6 overflow-y-auto flex flex-col gap-6 shadow-2xl transition-all duration-300">
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="font-bold text-white text-base tracking-tight truncate pr-4">{selectedNode.label}</p>
+        <div 
+          style={{ transform: `translate(${panelPos.x}px, ${panelPos.y}px)` }}
+          onPointerDown={(e) => {
+            if (['INPUT', 'BUTTON', 'A', 'LI'].includes(e.target.tagName)) return
+            dragRef.current.isDragging = true
+            dragRef.current.startX = e.clientX
+            dragRef.current.startY = e.clientY
+            dragRef.current.initialX = panelPos.x
+            dragRef.current.initialY = panelPos.y
+            document.body.style.userSelect = 'none'
+          }}
+          className="absolute right-4 top-20 max-h-[85vh] w-[340px] z-20 bg-[#0a0a0a]/90 backdrop-blur-xl border border-[#ffffff15] rounded-xl p-6 flex flex-col gap-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] cursor-grab active:cursor-grabbing overflow-hidden"
+        >
+          <div className="overflow-y-auto pr-2 -mr-2 flex flex-col gap-6">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="font-bold text-white text-base tracking-tight truncate pr-4">{selectedNode.label}</p>
               <button onClick={() => setSelectedNode(null)} className="text-gray-500 hover:text-white transition-colors cursor-pointer shrink-0">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
               </button>
@@ -513,10 +552,11 @@ function GraphInner() {
           <button
             onClick={() => navigate(`/repo/${owner}/${name}/ai`)}
             className="py-2.5 rounded-lg bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] text-xs font-semibold text-gray-200
-                       hover:text-white hover:border-[#555] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+                       hover:text-white hover:border-[#555] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 mt-auto shrink-0"
           >
             ✨ Explain with AI
           </button>
+          </div>
         </div>
       )}
 
