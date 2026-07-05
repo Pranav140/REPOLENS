@@ -123,14 +123,23 @@ function GraphInner() {
       }, 300)
       return () => clearTimeout(timer)
     } else if (!highlightPath && nodes.length > 0) {
-      const timer = setTimeout(() => {
-        fitView({
-          duration: 800,
-          padding: 0.2,
-          maxZoom: 1.2,
-        })
-      }, 150)
-      return () => clearTimeout(timer)
+      // Find the most important node (entry point, or highest complexity fallback)
+      let targetNode = nodes.find(n => n.data.isEntry)
+      if (!targetNode) {
+        targetNode = [...nodes].sort((a, b) => (b.data.complexity || 0) - (a.data.complexity || 0))[0]
+      }
+      
+      if (targetNode) {
+        const timer = setTimeout(() => {
+          fitView({
+            nodes: [{ id: targetNode.id }],
+            duration: 1000,
+            padding: 1, 
+            maxZoom: 1.2,
+          })
+        }, 200)
+        return () => clearTimeout(timer)
+      }
     }
   }, [nodes, searchParams, fitView, owner, name])
 
