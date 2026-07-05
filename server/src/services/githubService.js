@@ -105,10 +105,10 @@ async function getFileContent(owner, repo, filePath, token) {
  * @param {string} token
  * @returns {Array<{ sha, message, author, date }>}
  */
-async function getRecentCommits(owner, repo, token) {
+async function getRecentCommits(owner, repo, token, limit = 50) {
   try {
     const { data } = await githubAPI.get(
-      `/repos/${owner}/${repo}/commits?per_page=10`,
+      `/repos/${owner}/${repo}/commits?per_page=${limit}`,
       authHeader(token)
     );
 
@@ -120,6 +120,36 @@ async function getRecentCommits(owner, repo, token) {
     }));
   } catch (err) {
     throw new Error(`getRecentCommits failed for ${owner}/${repo}: ${err.message}`);
+  }
+}
+
+/**
+ * Fetch a single commit's detailed information including files/diffs.
+ */
+async function getCommit(owner, repo, sha, token) {
+  try {
+    const { data } = await githubAPI.get(
+      `/repos/${owner}/${repo}/commits/${sha}`,
+      authHeader(token)
+    );
+    return data;
+  } catch (err) {
+    throw new Error(`getCommit failed for ${owner}/${repo}@${sha}: ${err.message}`);
+  }
+}
+
+/**
+ * Fetch a commit's status (health/CI).
+ */
+async function getCommitStatus(owner, repo, sha, token) {
+  try {
+    const { data } = await githubAPI.get(
+      `/repos/${owner}/${repo}/commits/${sha}/status`,
+      authHeader(token)
+    );
+    return data;
+  } catch (err) {
+    return { state: 'unknown' };
   }
 }
 
@@ -209,4 +239,6 @@ module.exports = {
   getPRFiles,
   getFileCommitFrequency,
   getFileContentAtRef,
+  getCommit,
+  getCommitStatus,
 };

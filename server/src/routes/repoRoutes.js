@@ -354,4 +354,39 @@ router.get('/:owner/:name/onboarding-estimate', async (req, res, next) => {
   }
 });
 
+// GET /api/repos/:owner/:name/commits
+// Fetch recent commits (up to 50)
+router.get('/:owner/:name/commits', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const token = req.user.accessToken;
+    const repo = await getDbRepo(owner, name);
+    if (!repo) return;
+    const commits = await githubService.getRecentCommits(owner, name, token, 50);
+    return res.status(200).json({ commits });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/repos/:owner/:name/commits/:sha
+// Fetch detailed commit info and status
+router.get('/:owner/:name/commits/:sha', async (req, res, next) => {
+  try {
+    const { owner, name, sha } = req.params;
+    const token = req.user.accessToken;
+    const repo = await getDbRepo(owner, name);
+    if (!repo) return;
+    
+    const [commitInfo, statusInfo] = await Promise.all([
+      githubService.getCommit(owner, name, sha, token),
+      githubService.getCommitStatus(owner, name, sha, token)
+    ]);
+    
+    return res.status(200).json({ commit: commitInfo, status: statusInfo });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

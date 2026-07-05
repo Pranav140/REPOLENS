@@ -13,6 +13,7 @@ import AI from './pages/repo/AI'
 import Dependencies from './pages/repo/Dependencies'
 import BlastRadius from './pages/repo/BlastRadius'
 import OnboardingEstimate from './pages/repo/OnboardingEstimate'
+import Commits from './pages/repo/Commits'
 import { useAuth } from './hooks/useAuth'
 
 function PrivateRoute({ children }) {
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="dependencies" element={<Dependencies />} />
           <Route path="blast-radius" element={<BlastRadius />} />
           <Route path="onboarding-estimate" element={<OnboardingEstimate />} />
+          <Route path="commits" element={<Commits />} />
         </Route>
       </Routes>
     </BrowserRouter>

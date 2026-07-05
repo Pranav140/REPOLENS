@@ -11,6 +11,7 @@ import {
   Zap, ShieldAlert, AlertTriangle, File
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
 import api from '../../api/api'
 import { useTheme } from '../../contexts/ThemeContext'
 import './Overview.css'
@@ -69,13 +70,14 @@ const card = {
 }
 
 // ─── Sub-components ─────────────────────────────────────────────
-function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green', sparkData, sparkColor, sparkType = 'area', iconColor, colSpan = 1, theme = 'dark' }) {
+function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green', sparkData, sparkColor, sparkType = 'area', iconColor, colSpan = 1, theme = 'dark', href }) {
   const C = getC(theme)
   const counted = useCountUp(value)
   const areaData = sparkData.map((v, i) => ({ i, v }))
+  const navigate = useNavigate()
 
   return (
-    <motion.div variants={card} className="rl-card" style={{ gridColumn: `span ${colSpan}` }}>
+    <motion.div variants={card} className="rl-card" style={{ gridColumn: `span ${colSpan}`, cursor: href ? 'pointer' : 'default' }} onClick={() => href && navigate(href)}>
       {/* Top row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
         <div style={{ width: 36, height: 36, borderRadius: 10, background: `rgba(${iconColor || '0,255,38'},0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -130,6 +132,7 @@ function SectionLabel({ icon: Icon, children, color, theme = 'dark' }) {
 export default function Overview() {
   const { owner, name } = useParams()
   const { theme } = useTheme()
+  const navigate = useNavigate()
   const C = getC(theme)
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
@@ -221,6 +224,7 @@ export default function Overview() {
           sparkColor={C.neon}
           sparkType="area"
           theme={theme}
+          href={`/repo/${owner}/${name}/health`}
         />
         <KpiCard
           icon={FileCode2}
@@ -233,6 +237,7 @@ export default function Overview() {
           sparkType="bar"
           iconColor={theme === 'dark' ? "187,230,99" : "5,205,153"}
           theme={theme}
+          href={`/repo/${owner}/${name}/search`}
         />
         <KpiCard
           icon={GitBranch}
@@ -245,6 +250,7 @@ export default function Overview() {
           sparkType="area"
           iconColor="129,140,248"
           theme={theme}
+          href={`/repo/${owner}/${name}/dependencies`}
         />
         <KpiCard
           icon={FileX2}
@@ -257,6 +263,7 @@ export default function Overview() {
           sparkType="line"
           iconColor="245,158,11"
           theme={theme}
+          href={`/repo/${owner}/${name}/health`}
         />
 
         {/* ── ROW 2 Left: Repo Profile (span 2) ─────────── */}
@@ -305,8 +312,8 @@ export default function Overview() {
             {topComplexFiles.length > 0 ? topComplexFiles.map((file, i) => {
               const filename = (file.path || file.file || file.name || 'unknown').split('/').pop()
               const fullPath = file.path || file.file || file.name || ''
-              const complexity = file.complexity ?? file.score ?? file.cyclomaticComplexity ?? 0
-              const maxComplexity = topComplexFiles[0]?.complexity ?? topComplexFiles[0]?.score ?? topComplexFiles[0]?.cyclomaticComplexity ?? 100
+              const complexity = file.complexityScore ?? file.complexity ?? file.score ?? file.cyclomaticComplexity ?? 0
+              const maxComplexity = topComplexFiles[0]?.complexityScore ?? topComplexFiles[0]?.complexity ?? topComplexFiles[0]?.score ?? topComplexFiles[0]?.cyclomaticComplexity ?? 100
               const pct = Math.min(100, Math.round((complexity / (maxComplexity || 1)) * 100))
               const barColor = pct > 75 ? '#FF6B6B' : pct > 50 ? '#F59E0B' : C.lime
               return (
@@ -341,7 +348,7 @@ export default function Overview() {
         </motion.div>
 
         {/* ── ROW 3 Left: Recent Activity (span 2) ──────── */}
-        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2' }}>
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', cursor: 'pointer' }} onClick={() => navigate(`/repo/${owner}/${name}/commits`)}>
           <SectionLabel icon={GitCommitHorizontal} color={C.neon} theme={theme}>Recent Commits</SectionLabel>
 
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, gap: 0, overflowY: 'auto' }}>
@@ -396,7 +403,7 @@ export default function Overview() {
         </motion.div>
 
         {/* ── ROW 4-5 Left: Blast Radius (span 2, row 2) ── */}
-        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2', cursor: 'pointer' }} onClick={() => navigate(`/repo/${owner}/${name}/blast-radius`)}>
           <SectionLabel icon={Zap} color={C.neon} theme={theme}>Blast Radius</SectionLabel>
 
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
@@ -446,7 +453,7 @@ export default function Overview() {
         </motion.div>
 
         {/* ── ROW 4-5 Right: Repository DNA Radar (span 2, row 2) ── */}
-        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2', cursor: 'pointer' }} onClick={() => navigate(`/repo/${owner}/${name}/health`)}>
           <SectionLabel icon={ShieldAlert} color={C.lime} theme={theme}>Repository DNA</SectionLabel>
 
           <div style={{ flex: 1, minHeight: 280 }}>
