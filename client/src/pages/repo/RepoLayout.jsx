@@ -102,8 +102,8 @@ export default function RepoLayout() {
   const navItems = useMemo(() => [
     {
       label: "Insights",
-      bgColor: theme === 'dark' ? 'rgba(0, 255, 38, 0.12)' : '#00FF26',
-      textColor: theme === 'dark' ? '#00FF26' : '#0A0C10',
+      bgColor: '#00FF26',
+      textColor: '#0A0C10',
       links: [
         { label: "Overview", href: `/repo/${owner}/${name}/overview` },
         { label: "Graph", href: `/repo/${owner}/${name}/graph` },
@@ -122,7 +122,7 @@ export default function RepoLayout() {
     },
     {
       label: "Analysis",
-      bgColor: theme === 'dark' ? '#161B22' : '#E2E8F0',
+      bgColor: theme === 'dark' ? '#12161E' : '#F1F5F9',
       textColor: theme === 'dark' ? '#ffffff' : '#0F172A',
       links: [
         { label: "AI Tools", href: `/repo/${owner}/${name}/ai` },
