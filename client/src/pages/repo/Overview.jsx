@@ -1,46 +1,140 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, Tooltip as RechartsTooltip, RadialBarChart, RadialBar, Legend, BarChart, Bar, LineChart, Line } from 'recharts'
-import { 
-  Activity, FileCode2, GitBranch, FileX2, Layers, Code2, Star, GitFork, Clock, 
-  ExternalLink, GitCommitHorizontal, User, Calendar, AlertCircle, CheckCircle2, LayoutTemplate
+import {
+  ResponsiveContainer, AreaChart, Area, RadialBarChart, RadialBar,
+  BarChart, Bar, LineChart, Line, RadarChart, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip
+} from 'recharts'
+import {
+  Activity, FileCode2, GitBranch, FileX2, Code2, Star, Layers,
+  GitFork, ExternalLink, GitCommitHorizontal, User, Calendar, LayoutTemplate,
+  Zap, ShieldAlert
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import api from '../../api/api'
+import './Overview.css'
 
-// useCountUp hook
-function useCountUp(target, duration = 1000) {
+// ─── useCountUp ────────────────────────────────────────────────
+function useCountUp(target, duration = 1200) {
   const [count, setCount] = useState(0)
-
   useEffect(() => {
     if (target === undefined || target === null) return
     if (target === 0) { setCount(0); return }
-    let start = null; let animationFrameId;
-    const animate = (timestamp) => {
-      if (!start) start = timestamp
-      const progress = Math.min((timestamp - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
+    let start = null
+    let raf
+    const animate = (ts) => {
+      if (!start) start = ts
+      const progress = Math.min((ts - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 4)
       setCount(Math.round(eased * target))
-      if (progress < 1) animationFrameId = requestAnimationFrame(animate)
+      if (progress < 1) raf = requestAnimationFrame(animate)
     }
-    animationFrameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animationFrameId)
+    raf = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(raf)
   }, [target, duration])
   return count
 }
 
-const LANG_COLORS = { TypeScript: '#3178C6', JavaScript: '#F7DF1E', Python: '#3776AB', CSS: '#9B59B6', JSON: '#8B949E', Markdown: '#718096', Other: '#30363D' }
+// ─── Constants ─────────────────────────────────────────────────
+const C = {
+  neon: '#00FF26',
+  lime: '#BBE663',
+  dark: '#0A0C10',
+  cardBg: 'rgba(18, 22, 30, 0.85)',
+  panel: '#12161E',
+  slate: '#191919',
+  white: '#FFFFFF',
+  muted: '#6B7280',
+  border: 'rgba(255,255,255,0.07)',
+}
 
-const MOCK_SPARKLINE_DATA = [{ val: 10 }, { val: 25 }, { val: 20 }, { val: 40 }, { val: 35 }, { val: 55 }, { val: 50 }, { val: 70 }, { val: 65 }, { val: 90 }]
-const MOCK_SPARKLINE_DATA_2 = [{ val: 90 }, { val: 80 }, { val: 85 }, { val: 60 }, { val: 70 }, { val: 50 }, { val: 30 }, { val: 40 }, { val: 20 }, { val: 10 }]
+const LANG_BAR_COLORS = [C.neon, C.lime, '#6B7280', '#F59E0B', '#818CF8', '#EC4899']
+const MOCK_AREA = [8,18,14,32,28,45,40,58,52,78]
+const MOCK_BARS = [18,32,24,44,36,52,44,62,54,72]
+const MOCK_LINE_DOWN = [88,75,80,62,70,52,44,36,28,18]
 
+// ─── Animation variants ─────────────────────────────────────────
+const stagger = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+}
+const card = {
+  hidden: { opacity: 0, y: 28, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 260, damping: 22 } }
+}
+
+// ─── Sub-components ─────────────────────────────────────────────
+function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green', sparkData, sparkColor, sparkType = 'area', iconColor, colSpan = 1 }) {
+  const counted = useCountUp(value)
+  const areaData = sparkData.map((v, i) => ({ i, v }))
+
+  return (
+    <motion.div variants={card} className="rl-card" style={{ gridColumn: `span ${colSpan}` }}>
+      {/* Top row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{ width: 36, height: 36, borderRadius: 10, background: `rgba(${iconColor || '0,255,38'},0.1)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={18} color={`rgb(${iconColor || '0,255,38'})`} />
+        </div>
+        <span className={`rl-badge ${badgeClass}`}>{badge}</span>
+      </div>
+
+      <div className="rl-kpi-number">{counted}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.muted, marginTop: 6, marginBottom: 'auto' }}>{label}</div>
+
+      {/* Sparkline */}
+      <div style={{ height: 52, marginTop: 16, marginLeft: -24, marginRight: -24 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {sparkType === 'area' ? (
+            <AreaChart data={areaData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <defs>
+                <linearGradient id={`grad-${label}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={sparkColor} stopOpacity={0.35} />
+                  <stop offset="100%" stopColor={sparkColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={2} fill={`url(#grad-${label})`} dot={false} />
+            </AreaChart>
+          ) : sparkType === 'bar' ? (
+            <BarChart data={areaData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <Bar dataKey="v" fill={sparkColor} radius={[3, 3, 0, 0]} opacity={0.7} />
+            </BarChart>
+          ) : (
+            <LineChart data={areaData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <Line type="monotone" dataKey="v" stroke={sparkColor} strokeWidth={2} strokeDasharray="4 3" dot={false} />
+            </LineChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+    </motion.div>
+  )
+}
+
+function SectionLabel({ icon: Icon, children, color = C.neon }) {
+  return (
+    <div className="rl-section-label">
+      <Icon size={14} color={color} />
+      {children}
+    </div>
+  )
+}
+
+// ─── Main Component ─────────────────────────────────────────────
 export default function Overview() {
   const { owner, name } = useParams()
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [blastRadiusData, setBlastRadiusData] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
   const [copiedSha, setCopiedSha] = useState(null)
+  const [barsVisible, setBarsVisible] = useState(false)
+  const barsRef = useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setBarsVisible(true)
+    }, { threshold: 0.1 })
+    if (barsRef.current) observer.observe(barsRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     async function fetchData() {
@@ -48,356 +142,324 @@ export default function Overview() {
         const [repoRes, metricsRes, blastRes] = await Promise.all([
           api.get(`/api/repos/${owner}/${name}`),
           api.get(`/api/repos/${owner}/${name}/metrics`),
-          api.get(`/api/repos/${owner}/${name}/blast-radius`).catch(() => ({ data: { results: [] } }))
+          api.get(`/api/repos/${owner}/${name}/blast-radius`).catch(() => ({ data: [] }))
         ])
         setRepo(repoRes.data.repository)
-        setMetrics(metricsRes.data)
-        setBlastRadiusData(blastRes.data?.results || [])
+        setMetrics(metricsRes.data.metrics)
+        const raw = blastRes.data
+        setBlastRadiusData(Array.isArray(raw) ? raw : [])
+        // Trigger bar animations after data loads
+        setTimeout(() => setBarsVisible(true), 400)
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load repository overview')
-      } finally { setLoading(false) }
+        console.error('Overview fetch error:', err)
+      }
     }
     fetchData()
   }, [owner, name])
 
-  const healthScore = useCountUp(metrics?.healthScore ?? 0)
-  const filesAnalyzed = useCountUp(metrics?.totalFiles ?? 0)
-  const circularDeps = useCountUp(metrics?.circularDependencies ?? 0)
-  const deadFiles = useCountUp(metrics?.deadFiles ?? 0)
-
-  if (loading) {
-    return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
-        {[1,2,3,4].map(i => (
-          <div key={i} style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-xl)', height: '160px', animation: 'shimmer 1.5s infinite', backgroundImage: 'linear-gradient(90deg, var(--bg-elevated) 0%, var(--bg-overlay) 50%, var(--bg-elevated) 100%)', backgroundSize: '800px 100%' }} />
-        ))}
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '16px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <AlertCircle size={16} />{error}
-      </div>
-    )
-  }
-
-  const languagesData = Object.entries(metrics?.languages || {}).map(([key, value]) => ({
-    name: key, value: value, fill: LANG_COLORS[key] || LANG_COLORS.Other
-  })).sort((a, b) => b.value - a.value)
-  const totalLines = languagesData.reduce((acc, curr) => acc + curr.value, 0) || 1
-
   const copyToClipboard = (sha) => {
     navigator.clipboard.writeText(sha)
     setCopiedSha(sha)
-    setTimeout(() => setCopiedSha(null), 1500)
+    setTimeout(() => setCopiedSha(null), 2000)
   }
 
-  // Compute Real Blast Radius Metrics using Top 4 files
-  const top4 = blastRadiusData.slice(0, 4)
-  const c1 = top4[0] // Outermost (highest risk)
-  const c2 = top4[1]
-  const c3 = top4[2]
-  const c4 = top4[3] // Innermost
+  // ── Derived data ──────────────────────────────────────────────
+  const healthScore = useCountUp(metrics?.healthScore || 0)
+  const filesAnalyzed = useCountUp(metrics?.filesAnalyzed || 0)
+  const circularDeps = useCountUp(metrics?.circularDependencies || 0)
+  const deadFiles = useCountUp(metrics?.deadFiles?.length || 0)
 
-  const ecoVal = c1 ? c1.score : 77;
-  const ecoLabel = c1 ? c1.name : 'auth.ts';
+  const totalLines = Object.values(metrics?.languages || {}).reduce((a, b) => a + b, 0) || 1
+  const languagesData = Object.entries(metrics?.languages || {})
+    .map(([n, v]) => ({ name: n, value: v, pct: Math.round((v / totalLines) * 100) }))
+    .sort((a, b) => b.value - a.value)
 
-  const indirectVal = c2 ? c2.score : 73;
-  const indirectLabel = c2 ? c2.name : 'index.ts';
+  const blastArray = Array.isArray(blastRadiusData) ? blastRadiusData : []
+  const sortedBlast = [...blastArray].sort((a, b) => b.score - a.score)
+  const circles = [
+    { size: 300, bg: C.panel, label: sortedBlast[0]?.name || 'Ecosystem', score: sortedBlast[0]?.score ?? 85, textColor: C.neon },
+    { size: 228, bg: '#1A1F2B', label: sortedBlast[1]?.name || 'Indirect Deps', score: sortedBlast[1]?.score ?? 72, textColor: C.white },
+    { size: 160, bg: '#252B38', label: sortedBlast[2]?.name || 'Direct Deps', score: sortedBlast[2]?.score ?? 64, textColor: C.lime },
+    { size: 92, bg: '#3A4255', label: sortedBlast[3]?.name || 'Core', score: sortedBlast[3]?.score ?? 53, textColor: C.muted },
+  ]
 
-  const directVal = c3 ? c3.score : 73;
-  const directLabel = c3 ? c3.name : 'prisma.ts';
-
-  const coreVal = c4 ? c4.score : 53;
-  const coreLabel = c4 ? c4.name : 'password.service.ts';
+  const dnaData = [
+    { subject: 'Complexity', A: metrics?.averageComplexity ? Math.min(100, metrics.averageComplexity * 4) : 40 },
+    { subject: 'Docs', A: metrics?.documentationScore || 70 },
+    { subject: 'Files', A: Math.min(100, (metrics?.filesAnalyzed || 50) / 2) },
+    { subject: 'Activity', A: Math.min(100, (repo?.recentCommits?.length || 4) * 12) },
+    { subject: 'Health', A: metrics?.healthScore || 80 },
+    { subject: 'Maintain', A: 78 },
+  ]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '40px' }}>
-      
-      {/* KPIs Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
-        
-        {/* 1. Health Score (Premium Gradient + Area Chart) */}
-        <div style={{
-          background: 'linear-gradient(145deg, var(--bg-surface) 0%, rgba(5, 205, 153, 0.05) 100%)', borderRadius: '24px',
-          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', opacity: 0, border: '1px solid rgba(5, 205, 153, 0.1)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px 4px rgba(5, 205, 153, 0.2)' }}>
-              <Activity size={18} color="var(--success)" />
-            </div>
-            <div style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '20px', background: 'var(--success-bg)', color: 'var(--success)', letterSpacing: '0.02em' }}>
-              Excellent
-            </div>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px', letterSpacing: '-0.02em' }}>{healthScore}</div>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Health Score</div>
-          <div style={{ height: '32px', marginTop: '12px', marginLeft: '-20px', marginRight: '-20px', position: 'relative' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={MOCK_SPARKLINE_DATA}>
-                <defs><linearGradient id="colorHealth" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--success)" stopOpacity={0.3}/><stop offset="100%" stopColor="var(--success)" stopOpacity={0}/></linearGradient></defs>
-                <Area type="monotone" dataKey="val" stroke="var(--success)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorHealth)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+    <div className="rl-overview">
+      <motion.div className="rl-bento-grid" variants={stagger} initial="hidden" animate="show">
 
-        {/* 2. Files Analyzed (Clean White + Bar Chart) */}
-        <div style={{
-          background: 'var(--bg-surface)', borderRadius: '24px',
-          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '80ms', opacity: 0
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--accent-blue-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileCode2 size={18} color="var(--accent-blue)" />
+        {/* ── ROW 1: 4 KPI Cards ─────────────────────────── */}
+        <KpiCard
+          icon={Activity}
+          label="Health Score"
+          value={metrics?.healthScore || 0}
+          badge="Excellent"
+          badgeClass="rl-badge-green"
+          sparkData={MOCK_AREA}
+          sparkColor={C.neon}
+          sparkType="area"
+        />
+        <KpiCard
+          icon={FileCode2}
+          label="Files Analyzed"
+          value={metrics?.filesAnalyzed || 0}
+          badge="Scanned"
+          badgeClass="rl-badge-lime"
+          sparkData={MOCK_BARS}
+          sparkColor={C.lime}
+          sparkType="bar"
+          iconColor="187,230,99"
+        />
+        <KpiCard
+          icon={GitBranch}
+          label="Circular Deps"
+          value={metrics?.circularDependencies || 0}
+          badge={metrics?.circularDependencies > 0 ? 'Warning' : 'Clean'}
+          badgeClass={metrics?.circularDependencies > 0 ? 'rl-badge-lime' : 'rl-badge-green'}
+          sparkData={MOCK_AREA}
+          sparkColor="#818CF8"
+          sparkType="area"
+          iconColor="129,140,248"
+        />
+        <KpiCard
+          icon={FileX2}
+          label="Dead Files Found"
+          value={metrics?.deadFiles?.length || 0}
+          badge="Review"
+          badgeClass="rl-badge-gray"
+          sparkData={MOCK_LINE_DOWN}
+          sparkColor="#F59E0B"
+          sparkType="line"
+          iconColor="245,158,11"
+        />
+
+        {/* ── ROW 2 Left: Repo Profile (span 2) ─────────── */}
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2' }}>
+          <SectionLabel icon={LayoutTemplate} color={C.neon}>Repository Profile</SectionLabel>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(0,255,38,0.07)', border: `1px solid rgba(0,255,38,0.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <LayoutTemplate size={28} color={C.neon} />
             </div>
             <div>
-              <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '2px' }}>Files Analyzed</div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, letterSpacing: '-0.02em' }}>{filesAnalyzed}</div>
-            </div>
-          </div>
-          <div style={{ height: '32px', marginTop: '8px', marginLeft: '-20px', marginRight: '-20px', position: 'relative', outline: 'none' }}>
-            <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-              <BarChart data={MOCK_SPARKLINE_DATA} style={{ outline: 'none' }}>
-                <Bar dataKey="val" fill="var(--accent-blue)" radius={[4, 4, 0, 0]} opacity={0.8} style={{ outline: 'none' }} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* 3. Circular Dependencies (Side-by-Side + Radial Warning) */}
-        <div style={{
-          background: 'var(--bg-surface)', borderRadius: '24px',
-          padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '160ms', opacity: 0, border: metrics?.circularDependencies > 0 ? '1px solid rgba(238, 93, 80, 0.3)' : 'none'
-        }}>
-          <div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: metrics?.circularDependencies > 0 ? 'var(--danger-bg)' : 'var(--success-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-              <GitBranch size={16} color={metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)'} />
-            </div>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '4px', letterSpacing: '-0.02em' }}>{circularDeps}</div>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Circular Deps</div>
-          </div>
-          <div style={{ width: '64px', height: '64px', position: 'relative', outline: 'none' }}>
-            <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-              <RadialBarChart cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" barSize={6} data={[{ name: 'Deps', value: metrics?.circularDependencies > 0 ? 100 : 0, fill: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }]} startAngle={90} endAngle={-270} style={{ outline: 'none' }}>
-                <RadialBar background={{ fill: 'var(--bg-elevated)' }} dataKey="value" cornerRadius={10} style={{ outline: 'none' }} />
-              </RadialBarChart>
-            </ResponsiveContainer>
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '16px', fontWeight: 800, color: metrics?.circularDependencies > 0 ? 'var(--danger)' : 'var(--success)' }}>
-              !
-            </div>
-          </div>
-        </div>
-
-        {/* 4. Dead Files (Dark Theme / High Contrast + Dashed Line) */}
-        <div style={{
-          background: 'var(--bg-elevated)', borderRadius: '24px',
-          padding: '20px 20px 0 20px', position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', animation: 'fadeSlideUp 400ms ease forwards', animationDelay: '240ms', opacity: 0
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)' }}>Dead Files Found</div>
-            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--warning-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileX2 size={16} color="var(--warning)" />
-            </div>
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, marginBottom: '8px', letterSpacing: '-0.02em' }}>{deadFiles}</div>
-          <div style={{ height: '32px', marginTop: '12px', marginLeft: '-20px', marginRight: '-20px', position: 'relative', outline: 'none' }}>
-            <ResponsiveContainer width="100%" height="100%" style={{ outline: 'none' }}>
-              <LineChart data={MOCK_SPARKLINE_DATA_2} style={{ outline: 'none' }}>
-                <Line type="monotone" dataKey="val" stroke="var(--warning)" strokeWidth={2.5} strokeDasharray="4 4" dot={{ r: 2.5, fill: 'var(--warning)', strokeWidth: 0 }} style={{ outline: 'none' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Row 2: Languages & Repo Profile */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', animation: 'fadeSlideUp 400ms ease 200ms forwards', opacity: 0 }}>
-        
-        {/* Modern Languages Radial Chart */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Code2 size={20} color="var(--accent-blue)" /> Languages Breakdown
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '32px', flex: 1 }}>
-            <div style={{ width: '220px', height: '220px', position: 'relative' }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={languagesData} innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value" strokeWidth={0}>
-                    {languagesData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} style={{ filter: `drop-shadow(0px 4px 6px ${entry.fill}40)` }} />)}
-                  </Pie>
-                  <RechartsTooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: 'var(--shadow-md)', background: 'var(--bg-surface)' }} itemStyle={{ fontWeight: 600 }} />
-                </PieChart>
-              </ResponsiveContainer>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                <span style={{ fontSize: '32px', fontWeight: 800, color: 'var(--text-primary)' }}>{metrics?.languages ? Object.keys(metrics.languages).length : 0}</span>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>Languages</span>
-              </div>
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {languagesData.slice(0, 5).map((lang) => (
-                <div key={lang.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px dashed var(--border-default)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '12px', height: '12px', borderRadius: '4px', background: lang.fill, boxShadow: `0 2px 8px ${lang.fill}60` }} />
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{lang.name}</div>
-                  </div>
-                  <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>{Math.round((lang.value / totalLines) * 100)}%</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Repository Profile */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, width: '200px', height: '200px', background: 'var(--accent-blue-bg)', filter: 'blur(60px)', borderRadius: '50%', transform: 'translate(50%, -50%)', pointerEvents: 'none' }} />
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '32px' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Code2 size={32} color="var(--text-primary)" />
-            </div>
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>Repository Profile</div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>{repo?.name || 'Unknown'}</div>
-              <a href={`https://github.com/${repo?.owner}/${repo?.name}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '6px', fontSize: '14px', fontWeight: 600, color: 'var(--text-link)', textDecoration: 'none' }}>
-                <ExternalLink size={14} /> Open in GitHub
+              <div style={{ fontSize: 26, fontWeight: 800, color: C.white, letterSpacing: '-0.02em' }}>{repo?.name || '—'}</div>
+              <a
+                href={`https://github.com/${repo?.owner}/${repo?.name}`}
+                target="_blank" rel="noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: C.neon, textDecoration: 'none', marginTop: 4 }}
+              >
+                <ExternalLink size={12} /> Open in GitHub
               </a>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            <div style={{ background: 'var(--bg-elevated)', padding: '20px', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}><Star size={16} color="var(--warning)" /> Stars</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{repo?.stars ?? 0}</div>
-            </div>
-            <div style={{ background: 'var(--bg-elevated)', padding: '20px', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}><GitFork size={16} /> Forks</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{repo?.forks ?? 0}</div>
-            </div>
-            <div style={{ background: 'var(--bg-elevated)', padding: '20px', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}><Activity size={16} color="var(--success)" /> Complexity</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{metrics?.averageComplexity?.toFixed(1) || 0}</div>
-            </div>
-            <div style={{ background: 'var(--bg-elevated)', padding: '20px', borderRadius: 'var(--radius-lg)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '8px' }}><Layers size={16} color="var(--accent-blue)" /> Docs Score</div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)' }}>{metrics?.documentationScore || 0}%</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Row 3: Tech Stack & Recent Commits */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', animation: 'fadeSlideUp 400ms ease 400ms forwards', opacity: 0 }}>
-        
-        {/* Blast Radius Component */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-               Blast Radius
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                 <Activity size={16} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+            {[
+              { icon: Star, label: 'Stars', value: repo?.stars ?? 0, color: '#F59E0B' },
+              { icon: GitFork, label: 'Forks', value: repo?.forks ?? 0, color: C.lime },
+              { icon: Activity, label: 'Complexity', value: metrics?.averageComplexity?.toFixed(1) ?? 0, color: '#818CF8' },
+              { icon: Layers, label: 'Docs %', value: `${metrics?.documentationScore || 0}%`, color: C.neon },
+            ].map(s => (
+              <div key={s.label} className="rl-stat-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <s.icon size={13} color={s.color} />
+                  <span style={{ fontSize: 10, fontWeight: 600, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{s.label}</span>
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: C.white }}>{s.value}</div>
               </div>
-            </div>
+            ))}
           </div>
-          
-          <div style={{ position: 'relative', width: '320px', height: '320px', margin: 'auto' }}>
-            {/* Circle 1 (Outermost) */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '320px', height: '320px', borderRadius: '50%',
-              background: 'var(--accent-blue)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
-            }}>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{ecoVal}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.95)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ecoLabel}</div>
-            </div>
+        </motion.div>
 
-            {/* Circle 2 */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '250px', height: '250px', borderRadius: '50%',
-              background: 'linear-gradient(rgba(67, 24, 255, 0.4), rgba(67, 24, 255, 0.4)), var(--bg-surface)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
-            }}>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{indirectVal}</div>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.95)', fontWeight: 700, fontFamily: 'monospace', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{indirectLabel}</div>
-            </div>
+        {/* ── ROW 2-3 Right: Language Distribution (span 2, row 2) ── */}
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }} ref={barsRef}>
+          <SectionLabel icon={Code2} color={C.lime}>Language Distribution</SectionLabel>
 
-            {/* Circle 3 */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '180px', height: '180px', borderRadius: '50%',
-              background: 'linear-gradient(rgba(67, 24, 255, 0.15), rgba(67, 24, 255, 0.15)), var(--bg-surface)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '24px'
-            }}>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{directVal}</div>
-              <div style={{ fontSize: '11px', color: 'var(--accent-blue)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{directLabel}</div>
-            </div>
-
-            {/* Circle 4 (Innermost) */}
-            <div style={{
-              position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-              width: '110px', height: '110px', borderRadius: '50%',
-              background: 'repeating-linear-gradient(45deg, var(--border-default), var(--border-default) 3px, var(--bg-surface) 3px, var(--bg-surface) 8px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '20px'
-            }}>
-              <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>{coreVal}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-secondary)', fontWeight: 600, fontFamily: 'monospace', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{coreLabel}</div>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, justifyContent: 'center' }}>
+            {languagesData.length > 0 ? languagesData.slice(0, 6).map((lang, i) => (
+              <div key={lang.name}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{lang.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: LANG_BAR_COLORS[i] || C.muted }}>{lang.pct}%</span>
+                </div>
+                <div className="rl-lang-bar-track">
+                  <motion.div
+                    className="rl-lang-bar-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: barsVisible ? `${lang.pct}%` : 0 }}
+                    transition={{ duration: 1.2, delay: 0.1 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ background: `linear-gradient(90deg, ${LANG_BAR_COLORS[i] || C.muted}, ${LANG_BAR_COLORS[(i + 1) % LANG_BAR_COLORS.length]})` }}
+                  />
+                </div>
+              </div>
+            )) : (
+              <div style={{ color: C.muted, textAlign: 'center', fontSize: 13 }}>No language data available</div>
+            )}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Professional Timeline for Commits */}
-        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <GitCommitHorizontal size={20} color="var(--accent-blue)" /> Recent Activity
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-            {/* Vertical Line */}
-            <div style={{ position: 'absolute', top: '16px', bottom: '16px', left: '23px', width: '2px', background: 'var(--border-default)', zIndex: 0 }} />
-            
-            {repo?.recentCommits?.map((commit, i) => {
-              const prefixMatch = commit.message.match(/^(feat|fix|chore|refactor)(\(.*\))?:/i)
+        {/* ── ROW 3 Left: Recent Activity (span 2) ──────── */}
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2' }}>
+          <SectionLabel icon={GitCommitHorizontal} color={C.neon}>Recent Commits</SectionLabel>
+
+          <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, gap: 0, overflowY: 'auto' }}>
+            <div className="rl-timeline-line" />
+
+            {repo?.recentCommits?.slice(0, 3).map((commit, i) => {
+              const prefixMatch = commit.message.match(/^(feat|fix|chore|refactor|style|docs|test|perf)(\(.*?\))?:/i)
               const prefix = prefixMatch ? prefixMatch[1].toLowerCase() : null
-              let prefixStyle = { bg: 'var(--bg-elevated)', color: 'var(--text-secondary)' }
-              if (prefix === 'feat') prefixStyle = { bg: 'var(--success-bg)', color: 'var(--success)' }
-              else if (prefix === 'fix') prefixStyle = { bg: 'var(--danger-bg)', color: 'var(--danger)' }
-              
+              const prefixColors = { feat: C.neon, fix: '#F59E0B', chore: C.muted, refactor: '#818CF8', style: '#EC4899', docs: C.lime, test: '#06B6D4', perf: '#FF6B6B' }
+              const prefixColor = prefix ? (prefixColors[prefix] || C.muted) : C.muted
+
               return (
-                <div key={commit.sha} style={{ display: 'flex', alignItems: 'flex-start', gap: '20px', position: 'relative', zIndex: 1, marginBottom: i === repo.recentCommits.length - 1 ? 0 : '32px' }}>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--bg-surface)', border: '4px solid var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 0 2px var(--border-default)' }}>
-                    <GitCommitHorizontal size={20} color="var(--text-secondary)" />
-                  </div>
-                  <div style={{ flex: 1, background: 'var(--bg-elevated)', padding: '16px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                      {prefix && <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', marginRight: '8px', background: prefixStyle.bg, color: prefixStyle.color }}>{prefix}</span>}
-                      {commit.message}
+                <motion.div
+                  key={commit.sha}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + i * 0.12 }}
+                  style={{ display: 'flex', gap: 16, paddingLeft: 36, paddingBottom: 20, position: 'relative' }}
+                >
+                  {/* dot */}
+                  <div style={{ position: 'absolute', left: 8, top: 4, width: 16, height: 16, borderRadius: '50%', background: C.panel, border: `2px solid ${C.neon}`, zIndex: 1 }} />
+
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: C.border, borderRadius: 10, padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                      {prefix && (
+                        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4, background: `rgba(${prefixColor === C.neon ? '0,255,38' : prefixColor === '#F59E0B' ? '245,158,11' : '107,114,128'},0.12)`, color: prefixColor, border: `1px solid rgba(${prefixColor === C.neon ? '0,255,38' : '255,255,255'},0.15)` }}>
+                          {prefix}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{commit.message.replace(/^[a-z]+(\(.*?\))?:\s*/i, '')}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><User size={14} /> {commit.author}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Calendar size={14} /> {new Date(commit.date).toLocaleDateString()}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: C.muted, fontWeight: 500 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><User size={11} /> {commit.author}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Calendar size={11} /> {new Date(commit.date).toLocaleDateString()}</span>
                       </div>
-                      <button onClick={() => copyToClipboard(commit.sha)} style={{ padding: '4px 8px', background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 600, color: 'var(--text-link)', cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--text-link)'} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}>
-                        {commit.sha.substring(0, 7)}
-                        {copiedSha === commit.sha && <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translate(-50%, -4px)', background: 'var(--bg-overlay)', padding: '4px 8px', borderRadius: '4px', fontSize: '11px', color: 'var(--text-primary)', boxShadow: 'var(--shadow-md)', whiteSpace: 'nowrap' }}>Copied!</div>}
+                      <button
+                        onClick={() => copyToClipboard(commit.sha)}
+                        style={{ padding: '3px 8px', background: 'rgba(0,255,38,0.07)', border: '1px solid rgba(0,255,38,0.15)', borderRadius: 5, fontSize: 11, fontWeight: 700, color: C.neon, cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace', transition: 'all 0.2s' }}
+                      >
+                        {copiedSha === commit.sha ? '✓ copied' : commit.sha.slice(0, 7)}
                       </button>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               )
             })}
-            {(!repo?.recentCommits || repo.recentCommits.length === 0) && <div style={{ color: 'var(--text-muted)' }}>No recent commits found.</div>}
+            {(!repo?.recentCommits || repo.recentCommits.length === 0) && (
+              <div style={{ color: C.muted, fontSize: 13, paddingLeft: 36 }}>No recent commits</div>
+            )}
           </div>
-        </div>
+        </motion.div>
 
-      </div>
+        {/* ── ROW 4-5 Left: Blast Radius (span 2, row 2) ── */}
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
+          <SectionLabel icon={Zap} color={C.neon}>Blast Radius</SectionLabel>
+
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+            <div style={{ position: 'relative', width: 300, height: 300 }}>
+              {circles.map((c, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.3 + i * 0.12, type: 'spring', stiffness: 200, damping: 22 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    width: c.size,
+                    height: c.size,
+                    borderRadius: '50%',
+                    background: c.bg,
+                    border: i === 0 ? `1px solid rgba(0,255,38,0.2)` : `1px solid rgba(255,255,255,0.05)`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    paddingTop: 16,
+                    boxShadow: i === 0 ? `0 0 40px rgba(0,255,38,0.06)` : 'none',
+                  }}
+                >
+                  <div style={{ fontSize: i === 0 ? 20 : 18, fontWeight: 800, color: c.textColor, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>{c.score}</div>
+                  <div style={{ fontSize: 9, fontWeight: 600, color: i === 3 ? C.muted : C.muted, fontFamily: 'JetBrains Mono, monospace', maxWidth: c.size - 32, textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 4, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                    {c.label.length > 14 ? c.label.slice(0, 14) + '…' : c.label}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 20 }}>
+            {circles.map((c, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: [C.neon, C.lime, '#818CF8', C.muted][i] }} />
+                <span style={{ fontSize: 10, color: C.muted, fontFamily: 'JetBrains Mono, monospace' }}>{c.label.slice(0, 12)}</span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── ROW 4-5 Right: Repository DNA Radar (span 2, row 2) ── */}
+        <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
+          <SectionLabel icon={ShieldAlert} color={C.lime}>Repository DNA</SectionLabel>
+
+          <div style={{ flex: 1, minHeight: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart cx="50%" cy="50%" outerRadius="65%" data={dnaData}>
+                <defs>
+                  <radialGradient id="radarGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor={C.neon} stopOpacity={0.5} />
+                    <stop offset="100%" stopColor={C.lime} stopOpacity={0.15} />
+                  </radialGradient>
+                </defs>
+                <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fill: C.muted, fontSize: 11, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}
+                />
+                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar
+                  name="DNA"
+                  dataKey="A"
+                  stroke={C.neon}
+                  strokeWidth={2}
+                  fill="url(#radarGrad)"
+                  fillOpacity={1}
+                  dot={{ fill: C.neon, strokeWidth: 0, r: 4 }}
+                />
+                <Tooltip
+                  contentStyle={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 12 }}
+                  labelStyle={{ color: C.white }}
+                  itemStyle={{ color: C.neon }}
+                />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* DNA metrics row */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 20 }}>
+            {dnaData.map((d, i) => (
+              <div key={d.subject} style={{ textAlign: 'center', background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: '10px 8px' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: i % 2 === 0 ? C.neon : C.lime }}>{d.A}</div>
+                <div style={{ fontSize: 9, color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 2 }}>{d.subject}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+      </motion.div>
     </div>
   )
 }
