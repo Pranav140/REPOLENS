@@ -20,10 +20,10 @@ function getStatusInv(v, good, warn) {
 }
 const S = { good: 'text-green-400', warning: 'text-yellow-400', danger: 'text-red-400' }
 
-function Card({ children, title }) {
+function Card({ children, title, className = '' }) {
   return (
-    <div className="rounded-xl border border-[#222] bg-[#111] p-5">
-      {title && <h3 className="text-sm font-semibold text-gray-300 mb-4">{title}</h3>}
+    <div className={`rounded-2xl bg-[#0a0a0a]/50 backdrop-blur-xl p-6 shadow-sm border border-[#ffffff0a] ${className}`}>
+      {title && <h3 className="text-sm font-semibold text-gray-300 mb-5 uppercase tracking-wider">{title}</h3>}
       {children}
     </div>
   )
@@ -152,14 +152,14 @@ export default function Health() {
   }, [owner, name])
 
   if (loading) return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-[#222] bg-[#111] p-8 flex justify-center">
-        <Skeleton className="w-40 h-40 rounded-full bg-[#1e1e1e]" />
+    <div className="max-w-[1200px] mx-auto space-y-6 mt-8">
+      <div className="rounded-3xl bg-[#0a0a0a]/30 p-12 flex justify-center animate-pulse">
+        <div className="w-48 h-48 rounded-full border-8 border-[#ffffff05]" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {Array.from({length:6}).map((_,i)=>(
-          <div key={i} className="rounded-xl border border-[#222] bg-[#0a0a0a] p-4 space-y-2">
-            <Skeleton className="h-3 w-20 bg-[#1e1e1e]"/><Skeleton className="h-8 w-12 bg-[#1e1e1e]"/>
+          <div key={i} className="rounded-2xl bg-[#0a0a0a]/40 p-6 space-y-3">
+            <Skeleton className="h-3 w-20 bg-[#ffffff10]"/><Skeleton className="h-10 w-16 bg-[#ffffff10]"/>
           </div>
         ))}
       </div>
@@ -192,88 +192,113 @@ export default function Health() {
     {label:'Coupling', v:coupling, status:getStatus(Number(coupling),2,5), desc:'Average imports per file'},
   ]
 
-  const getCardStyle = (status) => ({
-    background: '#111',
-    border: `1px solid ${
-      status === 'good' ? 'rgba(34,197,94,0.2)' :
-      status === 'warning' ? 'rgba(245,158,11,0.2)' :
-      'rgba(239,68,68,0.2)'
-    }`,
-    boxShadow: status === 'danger' 
-      ? '0 0 12px rgba(239,68,68,0.05)' : 'none',
-    borderRadius: '8px', padding: '16px',
-    transition: 'all 0.2s ease'
-  })
+  const getCardStyle = (status) => {
+    if (status === 'good') return 'bg-gradient-to-br from-green-500/5 to-transparent border-green-500/10'
+    if (status === 'warning') return 'bg-gradient-to-br from-yellow-500/5 to-transparent border-yellow-500/10'
+    return 'bg-gradient-to-br from-red-500/5 to-transparent border-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.05)]'
+  }
 
   return (
-    <div className="space-y-4">
-      <Card>
-        <div className="flex items-center justify-center py-4">
-          <ScoreRing score={metrics.healthScore??0} />
-        </div>
-      </Card>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {cards.map(c=>(
-          <div key={c.label} style={getCardStyle(c.status)} className="space-y-1">
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{c.label}</p>
-            <p className={`text-2xl font-bold ${S[c.status]}`}>{c.v}</p>
-            <p className="text-xs text-gray-600">{c.desc}</p>
-          </div>
-        ))}
+    <div className="max-w-[1200px] mx-auto mt-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      {/* Header */}
+      <div className="text-center space-y-2 mb-10">
+        <h1 className="text-4xl font-bold text-white tracking-tight">Repository Health</h1>
+        <p className="text-gray-400 text-sm max-w-xl mx-auto">An overarching analysis of code quality, structural integrity, and architectural coupling across your codebase.</p>
       </div>
 
-      <Card title="File Complexity Distribution">
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={chartData} margin={{top:5,right:10,left:-20,bottom:5}}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false}/>
-            <XAxis dataKey="range" tick={{fill:'#6b7280',fontSize:12}} axisLine={false} tickLine={false}/>
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Main Score Hero */}
+        <div className="md:w-1/3 rounded-3xl bg-[#0a0a0a]/50 backdrop-blur-xl border border-[#ffffff0a] flex items-center justify-center py-10 shadow-lg relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff02] to-transparent pointer-events-none" />
+          <div className="relative z-10 transition-transform duration-500 group-hover:scale-105">
+            <ScoreRing score={metrics.healthScore??0} />
+          </div>
+        </div>
+
+        {/* Metrics Grid */}
+        <div className="md:w-2/3 grid grid-cols-2 md:grid-cols-3 gap-4">
+          {cards.map(c=>(
+            <div key={c.label} className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg backdrop-blur-sm ${getCardStyle(c.status)}`}>
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">{c.label}</p>
+                <p className={`text-4xl font-black tracking-tighter ${S[c.status]}`}>{c.v}</p>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-4 leading-snug">{c.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Card title="Complexity Distribution" className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-[#00cffc]/5 to-transparent opacity-20 pointer-events-none" />
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={chartData} margin={{top:20,right:10,left:-20,bottom:5}}>
+            <defs>
+              <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#00cffc" stopOpacity={0.8}/>
+                <stop offset="100%" stopColor="#00cffc" stopOpacity={0.1}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff0a" vertical={false}/>
+            <XAxis dataKey="range" tick={{fill:'#6b7280',fontSize:12}} axisLine={false} tickLine={false} dy={10}/>
             <YAxis tick={{fill:'#6b7280',fontSize:12}} axisLine={false} tickLine={false}/>
-            <Tooltip contentStyle={{background:'#111',border:'1px solid #222',borderRadius:8}}
-              labelStyle={{color:'#fff'}} itemStyle={{color:'#9ca3af'}}
-              cursor={{fill:'rgba(255,255,255,0.03)'}}/>
-            <Bar dataKey="count" fill="#3b82f6" radius={[4,4,0,0]}/>
+            <Tooltip 
+              cursor={{fill:'rgba(255,255,255,0.02)'}}
+              contentStyle={{background:'#0a0a0a',border:'1px solid #ffffff10',borderRadius:'12px',boxShadow:'0 8px 32px rgba(0,0,0,0.5)'}}
+              labelStyle={{color:'#fff', fontWeight: 'bold'}} 
+              itemStyle={{color:'#00cffc'}}
+            />
+            <Bar dataKey="count" fill="url(#colorCount)" radius={[6,6,0,0]} barSize={40} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
 
-      <Card title="Hotspot Files">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-[#222] hover:bg-transparent">
-              <TableHead className="text-gray-500">File</TableHead>
-              <TableHead className="text-gray-500 text-right w-32">Imported By</TableHead>
-              <TableHead className="text-gray-500 text-right w-32">Complexity</TableHead>
-              <TableHead className="text-gray-500 text-right w-24">Type</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {hotspots.slice(0,10).map(h=>{
-              const fm = files.find(f=>f.path===h.path)
-              const badge = fm?.isEntry
-                ? <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Entry</span>
-                : fm?.isDead
-                  ? <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Dead</span>
-                  : <span className="text-xs px-2 py-0.5 rounded-full bg-[#1e1e1e] text-gray-500 border border-[#333]">Module</span>
-              return (
-                <TableRow key={h.path} className="border-[#222] hover:bg-[#161616] text-sm">
-                  <TableCell className="font-mono text-xs text-gray-300 max-w-xs truncate">{h.path}</TableCell>
-                  <TableCell className="text-right text-gray-400">{h.importedByCount}</TableCell>
-                  <TableCell className="text-right text-gray-400">{h.complexityScore}</TableCell>
-                  <TableCell className="text-right">{badge}</TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-        {hotspots.length===0&&<p className="text-sm text-gray-600 text-center py-4">No hotspot data</p>}
+      <Card title="Architectural Hotspots">
+        <div className="rounded-xl overflow-hidden border border-[#ffffff0a] bg-[#050505]/50">
+          <Table>
+            <TableHeader className="bg-[#ffffff05]">
+              <TableRow className="border-b border-[#ffffff0a] hover:bg-transparent">
+                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase h-10">File Path</TableHead>
+                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10">Imported By</TableHead>
+                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10">Complexity</TableHead>
+                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-24 h-10">Type</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {hotspots.slice(0,10).map(h=>{
+                const fm = files.find(f=>f.path===h.path)
+                const badge = fm?.isEntry
+                  ? <span className="text-[10px] px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider font-bold">Entry</span>
+                  : fm?.isDead
+                    ? <span className="text-[10px] px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-wider font-bold">Dead</span>
+                    : <span className="text-[10px] px-2.5 py-1 rounded-md bg-[#ffffff05] text-gray-400 border border-[#ffffff10] uppercase tracking-wider font-bold">Module</span>
+                return (
+                  <TableRow key={h.path} className="border-b border-[#ffffff05] hover:bg-[#ffffff05] text-sm transition-colors cursor-default">
+                    <TableCell className="font-mono text-[11px] text-gray-300 max-w-xs truncate py-3">{h.path}</TableCell>
+                    <TableCell className="text-right text-white font-medium py-3">{h.importedByCount}</TableCell>
+                    <TableCell className="text-right text-gray-400 py-3">{h.complexityScore}</TableCell>
+                    <TableCell className="text-right py-3">{badge}</TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+          {hotspots.length===0&&<p className="text-sm text-gray-600 text-center py-8">No hotspot data available.</p>}
+        </div>
       </Card>
 
       {/* SECTION 5 — Structural Refactor Suggestions */}
-      <Card title="Structural Refactor Suggestions">
+      <Card title="Structural Insights">
         {!refactorFindings ? (
-          <div className="flex items-center justify-between p-4 bg-[#161616] rounded-lg border border-[#333]">
-            <span className="text-sm text-gray-300">Detect structural issues like god files, feature envy, and isolated clusters</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-gradient-to-r from-[#ffffff05] to-transparent rounded-2xl border border-[#ffffff0a] gap-4 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <GitBranch size={80} />
+            </div>
+            <div className="z-10">
+              <h4 className="text-white font-medium mb-1">Deep Structural Analysis</h4>
+              <p className="text-sm text-gray-400">Detect architectural anti-patterns like god files, feature envy, and isolated clusters.</p>
+            </div>
             <button
               onClick={async () => {
                 setRefactorLoading(true)
@@ -285,9 +310,9 @@ export default function Health() {
                 } finally { setRefactorLoading(false) }
               }}
               disabled={refactorLoading}
-              className="px-4 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-sm text-white transition-colors disabled:opacity-50 cursor-pointer"
+              className="z-10 px-6 py-2.5 rounded-xl bg-[#00cffc]/10 hover:bg-[#00cffc]/20 text-[#00cffc] border border-[#00cffc]/20 font-semibold text-sm transition-all duration-300 disabled:opacity-50 cursor-pointer whitespace-nowrap"
             >
-              {refactorLoading ? 'Analyzing...' : 'Analyze Structure'}
+              {refactorLoading ? 'Analyzing...' : 'Run Analysis'}
             </button>
           </div>
         ) : (
