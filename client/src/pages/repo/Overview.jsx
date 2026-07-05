@@ -1,14 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  ResponsiveContainer, AreaChart, Area, RadialBarChart, RadialBar,
+  ResponsiveContainer, AreaChart, Area,
   BarChart, Bar, LineChart, Line, RadarChart, PolarGrid,
   PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip
 } from 'recharts'
 import {
-  Activity, FileCode2, GitBranch, FileX2, Code2, Star, Layers,
+  Activity, FileCode2, GitBranch, FileX2, Star, Layers,
   GitFork, ExternalLink, GitCommitHorizontal, User, Calendar, LayoutTemplate,
-  Zap, ShieldAlert
+  Zap, ShieldAlert, AlertTriangle, File
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import api from '../../api/api'
@@ -124,6 +124,7 @@ export default function Overview() {
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [blastRadiusData, setBlastRadiusData] = useState([])
+  const [topComplexFiles, setTopComplexFiles] = useState([])
   const [copiedSha, setCopiedSha] = useState(null)
   const [barsVisible, setBarsVisible] = useState(false)
   const barsRef = useRef(null)
@@ -139,16 +140,22 @@ export default function Overview() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [repoRes, metricsRes, blastRes] = await Promise.all([
+        const [repoRes, metricsRes, blastRes, filesRes] = await Promise.all([
           api.get(`/api/repos/${owner}/${name}`),
           api.get(`/api/repos/${owner}/${name}/metrics`),
-          api.get(`/api/repos/${owner}/${name}/blast-radius`).catch(() => ({ data: [] }))
+          api.get(`/api/repos/${owner}/${name}/blast-radius`).catch(() => ({ data: { results: [] } })),
+          api.get(`/api/repos/${owner}/${name}/files`).catch(() => ({ data: [] }))
         ])
         setRepo(repoRes.data.repository)
-        setMetrics(metricsRes.data.metrics)
-        const raw = blastRes.data
+        setMetrics(metricsRes.data.metrics || metricsRes.data)
+        // API returns { results: [...] } shape
+        const raw = blastRes.data?.results ?? blastRes.data
         setBlastRadiusData(Array.isArray(raw) ? raw : [])
-        // Trigger bar animations after data loads
+        
+        // Calculate top complex files
+        const allFiles = Array.isArray(filesRes.data) ? filesRes.data : []
+        const complexFiles = allFiles.sort((a, b) => (b.complexityScore || 0) - (a.complexityScore || 0)).slice(0, 6)
+        setTopComplexFiles(complexFiles)
         setTimeout(() => setBarsVisible(true), 400)
       } catch (err) {
         console.error('Overview fetch error:', err)
@@ -165,35 +172,32 @@ export default function Overview() {
 
   // ── Derived data ──────────────────────────────────────────────
   const healthScore = useCountUp(metrics?.healthScore || 0)
-  const filesAnalyzed = useCountUp(metrics?.filesAnalyzed || 0)
+  const filesAnalyzed = useCountUp(metrics?.totalFiles || 0)
   const circularDeps = useCountUp(metrics?.circularDependencies || 0)
-  const deadFiles = useCountUp(metrics?.deadFiles?.length || 0)
-
-  const totalLines = Object.values(metrics?.languages || {}).reduce((a, b) => a + b, 0) || 1
-  const languagesData = Object.entries(metrics?.languages || {})
-    .map(([n, v]) => ({ name: n, value: v, pct: Math.round((v / totalLines) * 100) }))
-    .sort((a, b) => b.value - a.value)
-
+  const deadFilesCount = useCountUp(metrics?.deadFiles || 0)
   const blastArray = Array.isArray(blastRadiusData) ? blastRadiusData : []
-  const sortedBlast = [...blastArray].sort((a, b) => b.score - a.score)
+  // Each blast item: { path, name, score, riskLevel, dependents, ... }
+  const sortedBlast = [...blastArray].sort((a, b) => (b.score ?? b.dependentCount ?? 0) - (a.score ?? a.dependentCount ?? 0))
+  const getLabel = (item) => item ? (item.name || item.path?.split('/').pop() || 'Unknown') : null
+  const getScore = (item) => item ? (item.score ?? item.dependentCount ?? item.impactScore ?? 0) : null
   const circles = [
-    { size: 300, bg: C.panel, label: sortedBlast[0]?.name || 'Ecosystem', score: sortedBlast[0]?.score ?? 85, textColor: C.neon },
-    { size: 228, bg: '#1A1F2B', label: sortedBlast[1]?.name || 'Indirect Deps', score: sortedBlast[1]?.score ?? 72, textColor: C.white },
-    { size: 160, bg: '#252B38', label: sortedBlast[2]?.name || 'Direct Deps', score: sortedBlast[2]?.score ?? 64, textColor: C.lime },
-    { size: 92, bg: '#3A4255', label: sortedBlast[3]?.name || 'Core', score: sortedBlast[3]?.score ?? 53, textColor: C.muted },
+    { size: 300, bg: C.panel, label: getLabel(sortedBlast[0]) || 'Ecosystem', score: getScore(sortedBlast[0]) ?? 85, textColor: C.neon },
+    { size: 228, bg: '#1A1F2B', label: getLabel(sortedBlast[1]) || 'Indirect Deps', score: getScore(sortedBlast[1]) ?? 72, textColor: C.white },
+    { size: 160, bg: '#252B38', label: getLabel(sortedBlast[2]) || 'Direct Deps', score: getScore(sortedBlast[2]) ?? 64, textColor: C.lime },
+    { size: 92, bg: '#3A4255', label: getLabel(sortedBlast[3]) || 'Core', score: getScore(sortedBlast[3]) ?? 53, textColor: C.muted },
   ]
 
   const dnaData = [
     { subject: 'Complexity', A: metrics?.averageComplexity ? Math.min(100, metrics.averageComplexity * 4) : 40 },
     { subject: 'Docs', A: metrics?.documentationScore || 70 },
-    { subject: 'Files', A: Math.min(100, (metrics?.filesAnalyzed || 50) / 2) },
+    { subject: 'Files', A: Math.min(100, (metrics?.totalFiles || 50) / 2) },
     { subject: 'Activity', A: Math.min(100, (repo?.recentCommits?.length || 4) * 12) },
     { subject: 'Health', A: metrics?.healthScore || 80 },
-    { subject: 'Maintain', A: 78 },
+    { subject: 'Maintain', A: 100 - (metrics?.securityIssues || 0) * 10 || 78 },
   ]
 
   return (
-    <div className="rl-overview">
+    <div className="rl-overview" data-theme="dark">
       <motion.div className="rl-bento-grid" variants={stagger} initial="hidden" animate="show">
 
         {/* ── ROW 1: 4 KPI Cards ─────────────────────────── */}
@@ -210,7 +214,7 @@ export default function Overview() {
         <KpiCard
           icon={FileCode2}
           label="Files Analyzed"
-          value={metrics?.filesAnalyzed || 0}
+          value={metrics?.totalFiles || 0}
           badge="Scanned"
           badgeClass="rl-badge-lime"
           sparkData={MOCK_BARS}
@@ -232,7 +236,7 @@ export default function Overview() {
         <KpiCard
           icon={FileX2}
           label="Dead Files Found"
-          value={metrics?.deadFiles?.length || 0}
+          value={metrics?.deadFiles || 0}
           badge="Review"
           badgeClass="rl-badge-gray"
           sparkData={MOCK_LINE_DOWN}
@@ -279,29 +283,45 @@ export default function Overview() {
           </div>
         </motion.div>
 
-        {/* ── ROW 2-3 Right: Language Distribution (span 2, row 2) ── */}
+        {/* ── ROW 2-3 Right: Top Complex Files (span 2, row 2) ── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }} ref={barsRef}>
-          <SectionLabel icon={Code2} color={C.lime}>Language Distribution</SectionLabel>
+          <SectionLabel icon={AlertTriangle} color="#F59E0B">Top Complex Files</SectionLabel>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, justifyContent: 'center' }}>
-            {languagesData.length > 0 ? languagesData.slice(0, 6).map((lang, i) => (
-              <div key={lang.name}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: C.white }}>{lang.name}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: LANG_BAR_COLORS[i] || C.muted }}>{lang.pct}%</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
+            {topComplexFiles.length > 0 ? topComplexFiles.map((file, i) => {
+              const filename = (file.path || file.file || file.name || 'unknown').split('/').pop()
+              const fullPath = file.path || file.file || file.name || ''
+              const complexity = file.complexity ?? file.score ?? file.cyclomaticComplexity ?? 0
+              const maxComplexity = topComplexFiles[0]?.complexity ?? topComplexFiles[0]?.score ?? topComplexFiles[0]?.cyclomaticComplexity ?? 100
+              const pct = Math.min(100, Math.round((complexity / (maxComplexity || 1)) * 100))
+              const barColor = pct > 75 ? '#FF6B6B' : pct > 50 ? '#F59E0B' : C.lime
+              return (
+                <div key={fullPath} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <File size={13} color={barColor} style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.white, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filename}</span>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: barColor, flexShrink: 0, marginLeft: 8 }}>{complexity}</span>
+                  </div>
+                  <div style={{ fontSize: 10, color: C.muted, marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fullPath}</div>
+                  <div className="rl-lang-bar-track">
+                    <motion.div
+                      className="rl-lang-bar-fill"
+                      initial={{ width: 0 }}
+                      animate={{ width: barsVisible ? `${pct}%` : 0 }}
+                      transition={{ duration: 1.0, delay: 0.15 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                      style={{ background: `linear-gradient(90deg, ${barColor}, ${barColor}88)` }}
+                    />
+                  </div>
                 </div>
-                <div className="rl-lang-bar-track">
-                  <motion.div
-                    className="rl-lang-bar-fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: barsVisible ? `${lang.pct}%` : 0 }}
-                    transition={{ duration: 1.2, delay: 0.1 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ background: `linear-gradient(90deg, ${LANG_BAR_COLORS[i] || C.muted}, ${LANG_BAR_COLORS[(i + 1) % LANG_BAR_COLORS.length]})` }}
-                  />
-                </div>
+              )
+            }) : (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: C.muted, fontSize: 13, gap: 8 }}>
+                <AlertTriangle size={28} color="rgba(255,255,255,0.15)" />
+                <span>No file complexity data available</span>
+                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>Run analysis to populate this panel</span>
               </div>
-            )) : (
-              <div style={{ color: C.muted, textAlign: 'center', fontSize: 13 }}>No language data available</div>
             )}
           </div>
         </motion.div>
