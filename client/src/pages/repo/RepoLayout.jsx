@@ -145,18 +145,18 @@ export default function RepoLayout() {
   const LeftContent = (
     <div className="logo-container" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
       <div className="logo-dot" />
-      <span className="logo-text">RepoLens</span>
+      <span className="logo-text" style={{ color: '#ffffff' }}>RepoLens</span>
     </div>
   )
 
   const CenterContent = (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-      <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+      <h1 style={{ fontSize: '18px', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
         {owner} / {name}
       </h1>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 8px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-default)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', background: getStatusColor(), animation: status === 'analyzing' ? 'pulseGlow 1.5s infinite' : 'none', '--glow-color': getStatusColor() }} />
-        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{status}</span>
+        <span style={{ fontSize: '10px', fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{status}</span>
       </div>
     </div>
   )
@@ -166,35 +166,35 @@ export default function RepoLayout() {
       
       {/* Stats & Actions Pill */}
       <div style={{ 
-        display: 'flex', alignItems: 'center', background: 'var(--bg-elevated)', 
+        display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.05)', 
         borderRadius: 'var(--radius-full)', padding: '4px 6px', gap: '4px', 
-        border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-sm)'
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
       }} className="hidden md:flex">
         
         {/* Stats */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 10px', color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 10px', color: '#9CA3AF' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}><Star size={14} />{repo?.stars ?? 0}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '13px', fontWeight: 600 }}><GitFork size={14} />{repo?.forks ?? 0}</span>
         </div>
 
-        <div style={{ width: '1px', height: '14px', background: 'var(--border-active)' }} />
+        <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.15)' }} />
 
         {/* Actions */}
         <button 
           onClick={handleReanalyze} disabled={reanalyzing} 
-          style={{ padding: '6px 14px', borderRadius: 'var(--radius-full)', background: 'var(--bg-surface)', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', border: 'none', boxShadow: 'var(--shadow-sm)' }}
-          onMouseEnter={e => e.currentTarget.style.opacity = 0.8}
-          onMouseLeave={e => e.currentTarget.style.opacity = 1}
+          style={{ padding: '6px 14px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.1)', color: '#ffffff', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s', border: 'none' }}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
         >
           <RefreshCw size={13} className={reanalyzing ? 'animate-spin' : ''} /> 
           <span className="hidden lg:inline">Reanalyze</span>
         </button>
         <button 
           onClick={() => setDeleteDialog(true)} 
-          style={{ padding: '6px', borderRadius: '50%', background: 'var(--danger-bg)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', border: 'none', marginLeft: '2px' }} 
+          style={{ padding: '6px', borderRadius: '50%', background: 'rgba(238, 93, 80, 0.15)', color: '#EE5D50', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s', border: 'none', marginLeft: '2px' }} 
           title="Delete"
-          onMouseEnter={e => e.currentTarget.style.background = 'rgba(238, 93, 80, 0.2)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--danger-bg)'}
+          onMouseEnter={e => e.currentTarget.style.background = 'rgba(238, 93, 80, 0.25)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'rgba(238, 93, 80, 0.15)'}
         >
           <Trash2 size={14} />
         </button>
@@ -204,33 +204,33 @@ export default function RepoLayout() {
       <button
         onClick={toggleTheme}
         style={{
-          width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--border-default)',
-          background: 'var(--bg-elevated)', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)', marginLeft: '8px'
+          width: '34px', height: '34px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.05)', color: '#9CA3AF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)', marginLeft: '8px'
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-active)'; e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.background = 'var(--bg-overlay)' }}
-        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'var(--bg-elevated)' }}
+        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = '#ffffff'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#9CA3AF'; e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
       >
         {theme === 'dark' ? <Sun size={15} style={{ transition: 'transform 400ms', transform: 'rotate(360deg)' }} /> : <Moon size={15} style={{ transition: 'transform 400ms', transform: 'rotate(360deg)' }} />}
       </button>
 
       {/* User Avatar */}
       <div 
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', borderRadius: '50%', cursor: 'pointer', transition: 'all var(--transition-fast)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }} 
-        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-overlay)' }} 
-        onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)' }}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px', borderRadius: '50%', cursor: 'pointer', transition: 'all var(--transition-fast)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }} 
+        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }} 
+        onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
       >
         {user?.avatarUrl ? (
           <img src={user.avatarUrl} alt={user.username} style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
         ) : (
-          <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600', color: 'var(--text-primary)' }}>{initials}</div>
+          <div style={{ width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600', color: '#ffffff' }}>{initials}</div>
         )}
       </div>
       <button 
         onClick={(e) => { e.stopPropagation(); logout() }} 
-        style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'transparent', border: 'none', padding: '4px' }} 
+        style={{ color: '#6B7280', cursor: 'pointer', background: 'transparent', border: 'none', padding: '4px' }} 
         title="Logout"
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--danger)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+        onMouseEnter={e => e.currentTarget.style.color = '#EE5D50'}
+        onMouseLeave={e => e.currentTarget.style.color = '#6B7280'}
       >
         <LogOut size={16} />
       </button>
@@ -241,7 +241,7 @@ export default function RepoLayout() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
       
       {/* Combined Top Navbar via CardNav */}
-      <div style={{ padding: '12px 24px', position: 'sticky', top: 0, zIndex: 100, background: theme === 'dark' ? 'rgba(10,12,16,0.92)' : 'rgba(13,15,20,0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.15)' }}>
+      <div style={{ padding: '12px 24px', position: 'sticky', top: 0, zIndex: 100, background: theme === 'dark' ? 'rgba(10,12,16,0.92)' : 'rgba(244, 247, 252, 0.92)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.05)' }}>
         <CardNav 
           items={navItems}
           leftContent={LeftContent}
