@@ -102,8 +102,8 @@ export default function RepoLayout() {
   const navItems = useMemo(() => [
     {
       label: "Insights",
-      bgColor: "#1B1722",
-      textColor: "#ffffff",
+      bgColor: theme === 'dark' ? 'rgba(0, 255, 38, 0.12)' : '#00FF26',
+      textColor: theme === 'dark' ? '#00FF26' : '#0A0C10',
       links: [
         { label: "Overview", href: `/repo/${owner}/${name}/overview` },
         { label: "Graph", href: `/repo/${owner}/${name}/graph` },
@@ -112,8 +112,8 @@ export default function RepoLayout() {
     },
     {
       label: "Health",
-      bgColor: "#2F293A",
-      textColor: "#ffffff",
+      bgColor: theme === 'dark' ? '#12161E' : '#F1F5F9',
+      textColor: theme === 'dark' ? '#ffffff' : '#0F172A',
       links: [
         { label: "Health", href: `/repo/${owner}/${name}/health` },
         { label: "Security", href: `/repo/${owner}/${name}/security` },
@@ -122,15 +122,15 @@ export default function RepoLayout() {
     },
     {
       label: "Analysis",
-      bgColor: "#2F293A",
-      textColor: "#ffffff",
+      bgColor: theme === 'dark' ? '#161B22' : '#E2E8F0',
+      textColor: theme === 'dark' ? '#ffffff' : '#0F172A',
       links: [
         { label: "AI Tools", href: `/repo/${owner}/${name}/ai` },
         { label: "Blast Radius", href: `/repo/${owner}/${name}/blast-radius` },
         { label: "Onboarding Time", href: `/repo/${owner}/${name}/onboarding-estimate` }
       ]
     }
-  ], [owner, name]);
+  ], [owner, name, theme]);
 
   const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : 'RL'
 
@@ -241,12 +241,14 @@ export default function RepoLayout() {
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
       
       {/* Combined Top Navbar via CardNav */}
-      <div style={{ padding: '16px 24px', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ padding: '12px 24px', position: 'sticky', top: 0, zIndex: 100, background: theme === 'dark' ? 'rgba(10,12,16,0.92)' : 'rgba(13,15,20,0.96)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.15)' }}>
         <CardNav 
           items={navItems}
           leftContent={LeftContent}
           centerContent={CenterContent}
           rightContent={RightContent}
+          baseColor={theme === 'dark' ? '#12161E' : '#0D0F14'}
+          menuColor="#ffffff"
         />
       </div>
 
