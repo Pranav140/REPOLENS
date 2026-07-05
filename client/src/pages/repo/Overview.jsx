@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import api from '../../api/api'
+import { useTheme } from '../../contexts/ThemeContext'
 import './Overview.css'
 
 // ─── useCountUp ────────────────────────────────────────────────
@@ -121,6 +122,7 @@ function SectionLabel({ icon: Icon, children, color = C.neon }) {
 // ─── Main Component ─────────────────────────────────────────────
 export default function Overview() {
   const { owner, name } = useParams()
+  const { theme } = useTheme()
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [blastRadiusData, setBlastRadiusData] = useState([])
@@ -181,10 +183,10 @@ export default function Overview() {
   const getLabel = (item) => item ? (item.name || item.path?.split('/').pop() || 'Unknown') : null
   const getScore = (item) => item ? (item.score ?? item.dependentCount ?? item.impactScore ?? 0) : null
   const circles = [
-    { size: 300, bg: C.panel, label: getLabel(sortedBlast[0]) || 'Ecosystem', score: getScore(sortedBlast[0]) ?? 85, textColor: C.neon },
-    { size: 228, bg: '#1A1F2B', label: getLabel(sortedBlast[1]) || 'Indirect Deps', score: getScore(sortedBlast[1]) ?? 72, textColor: C.white },
-    { size: 160, bg: '#252B38', label: getLabel(sortedBlast[2]) || 'Direct Deps', score: getScore(sortedBlast[2]) ?? 64, textColor: C.lime },
-    { size: 92, bg: '#3A4255', label: getLabel(sortedBlast[3]) || 'Core', score: getScore(sortedBlast[3]) ?? 53, textColor: C.muted },
+    { size: 300, bg: theme === 'dark' ? C.panel : '#E2E8F0', label: getLabel(sortedBlast[0]) || 'Ecosystem', score: getScore(sortedBlast[0]) ?? 85, textColor: theme === 'dark' ? C.neon : '#059669' },
+    { size: 228, bg: theme === 'dark' ? '#1A1F2B' : '#CBD5E1', label: getLabel(sortedBlast[1]) || 'Indirect Deps', score: getScore(sortedBlast[1]) ?? 72, textColor: theme === 'dark' ? C.white : '#0F172A' },
+    { size: 160, bg: theme === 'dark' ? '#252B38' : '#94A3B8', label: getLabel(sortedBlast[2]) || 'Direct Deps', score: getScore(sortedBlast[2]) ?? 64, textColor: theme === 'dark' ? C.lime : '#4D7C0F' },
+    { size: 92, bg: theme === 'dark' ? '#3A4255' : '#64748B', label: getLabel(sortedBlast[3]) || 'Core', score: getScore(sortedBlast[3]) ?? 53, textColor: theme === 'dark' ? C.muted : '#FFFFFF' },
   ]
 
   const dnaData = [
@@ -197,7 +199,7 @@ export default function Overview() {
   ]
 
   return (
-    <div className="rl-overview" data-theme="dark">
+    <div className="rl-overview" data-theme={theme}>
       <motion.div className="rl-bento-grid" variants={stagger} initial="hidden" animate="show">
 
         {/* ── ROW 1: 4 KPI Cards ─────────────────────────── */}
@@ -300,7 +302,7 @@ export default function Overview() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <File size={13} color={barColor} style={{ flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.white, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filename}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: theme === 'dark' ? C.white : '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filename}</span>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 800, color: barColor, flexShrink: 0, marginLeft: 8 }}>{complexity}</span>
                   </div>
@@ -348,16 +350,16 @@ export default function Overview() {
                   style={{ display: 'flex', gap: 16, paddingLeft: 36, paddingBottom: 20, position: 'relative' }}
                 >
                   {/* dot */}
-                  <div style={{ position: 'absolute', left: 8, top: 4, width: 16, height: 16, borderRadius: '50%', background: C.panel, border: `2px solid ${C.neon}`, zIndex: 1 }} />
+                  <div style={{ position: 'absolute', left: 8, top: 4, width: 16, height: 16, borderRadius: '50%', background: theme === 'dark' ? C.panel : '#FFFFFF', border: `2px solid ${C.neon}`, zIndex: 1 }} />
 
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', border: C.border, borderRadius: 10, padding: '12px 14px' }}>
+                  <div style={{ flex: 1, background: theme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)', border: theme === 'dark' ? C.border : '1px solid rgba(0,0,0,0.07)', borderRadius: 10, padding: '12px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
                       {prefix && (
-                        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4, background: `rgba(${prefixColor === C.neon ? '0,255,38' : prefixColor === '#F59E0B' ? '245,158,11' : '107,114,128'},0.12)`, color: prefixColor, border: `1px solid rgba(${prefixColor === C.neon ? '0,255,38' : '255,255,255'},0.15)` }}>
+                        <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '2px 7px', borderRadius: 4, background: `rgba(${prefixColor === C.neon ? '0,255,38' : prefixColor === '#F59E0B' ? '245,158,11' : '107,114,128'},0.12)`, color: prefixColor, border: `1px solid rgba(${prefixColor === C.neon ? '0,255,38' : (theme === 'dark' ? '255,255,255' : '0,0,0')},0.15)` }}>
                           {prefix}
                         </span>
                       )}
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.white }}>{commit.message.replace(/^[a-z]+(\(.*?\))?:\s*/i, '')}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: theme === 'dark' ? C.white : '#0F172A' }}>{commit.message.replace(/^[a-z]+(\(.*?\))?:\s*/i, '')}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 11, color: C.muted, fontWeight: 500 }}>
@@ -444,7 +446,7 @@ export default function Overview() {
                     <stop offset="100%" stopColor={C.lime} stopOpacity={0.15} />
                   </radialGradient>
                 </defs>
-                <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                <PolarGrid stroke={theme === 'dark' ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"} />
                 <PolarAngleAxis
                   dataKey="subject"
                   tick={{ fill: C.muted, fontSize: 11, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace' }}
@@ -460,8 +462,8 @@ export default function Overview() {
                   dot={{ fill: C.neon, strokeWidth: 0, r: 4 }}
                 />
                 <Tooltip
-                  contentStyle={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 12 }}
-                  labelStyle={{ color: C.white }}
+                  contentStyle={{ background: theme === 'dark' ? C.panel : '#FFFFFF', border: `1px solid ${theme === 'dark' ? C.border : '#E2E8F0'}`, borderRadius: 8, fontFamily: 'JetBrains Mono', fontSize: 12 }}
+                  labelStyle={{ color: theme === 'dark' ? C.white : '#0F172A' }}
                   itemStyle={{ color: C.neon }}
                 />
               </RadarChart>
