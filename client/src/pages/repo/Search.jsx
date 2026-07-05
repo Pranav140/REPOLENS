@@ -322,7 +322,7 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
                 File Content
               </p>
               <button
-                onClick={() => window.open(`https://github.com/${owner}/${name}/blob/main/${file.path}`, '_blank')}
+                onClick={() => window.open(`https://github.com/${owner}/${name}/blob/HEAD/${file.path}`, '_blank')}
                 className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors bg-blue-500/10 px-2 py-1 rounded-md"
               >
                 <span>View Full File</span>
