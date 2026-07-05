@@ -359,8 +359,9 @@ router.get('/:owner/:name/onboarding-estimate', async (req, res, next) => {
 router.get('/:owner/:name/commits', async (req, res, next) => {
   try {
     const { owner, name } = req.params;
-    const token = req.user.accessToken;
-    const repo = await getDbRepo(owner, name);
+    const userWithToken = await require('../models/User').findById(req.user._id);
+    const token = userWithToken.accessToken;
+    const repo = await findRepo(owner, name, req.user._id, res);
     if (!repo) return;
     const commits = await githubService.getRecentCommits(owner, name, token, 50);
     return res.status(200).json({ commits });
@@ -374,8 +375,9 @@ router.get('/:owner/:name/commits', async (req, res, next) => {
 router.get('/:owner/:name/commits/:sha', async (req, res, next) => {
   try {
     const { owner, name, sha } = req.params;
-    const token = req.user.accessToken;
-    const repo = await getDbRepo(owner, name);
+    const userWithToken = await require('../models/User').findById(req.user._id);
+    const token = userWithToken.accessToken;
+    const repo = await findRepo(owner, name, req.user._id, res);
     if (!repo) return;
     
     const [commitInfo, statusInfo] = await Promise.all([
@@ -398,8 +400,9 @@ router.get('/:owner/:name/file', async (req, res, next) => {
     if (!path) {
       return res.status(400).json({ error: 'Bad Request', message: 'Query param "path" is required' });
     }
-    const token = req.user.accessToken;
-    const repo = await getDbRepo(owner, name);
+    const userWithToken = await require('../models/User').findById(req.user._id);
+    const token = userWithToken.accessToken;
+    const repo = await findRepo(owner, name, req.user._id, res);
     if (!repo) return;
     
     const content = await githubService.getFileContent(owner, name, path, token);

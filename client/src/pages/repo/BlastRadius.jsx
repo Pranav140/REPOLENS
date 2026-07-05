@@ -1,22 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Flame, ExternalLink, ChevronRight, GitBranch } from 'lucide-react'
+import { Flame, GitBranch, AlertTriangle, Activity, BarChart2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '../../api/api'
+import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function BlastRadius() {
   const { owner, name } = useParams()
   const navigate = useNavigate()
+  const { theme } = useTheme()
   const [data, setData] = useState(null)
-  const [isLoading, setIsLoading] = useState(true) // Start as true for auto-load
+  const [isLoading, setIsLoading] = useState(true)
   const [hasScanned, setHasScanned] = useState(false)
   const [error, setError] = useState(null)
-  const [visible, setVisible] = useState(false)
 
-  useEffect(() => {
-    setTimeout(() => setVisible(true), 100)
-  }, [])
-  async function fetchBlastRadius() {
+  const fetchBlastRadius = async () => {
     setIsLoading(true)
     setError(null)
     try {
@@ -31,50 +30,11 @@ export default function BlastRadius() {
     }
   }
 
-  // Fetch on component mount
   useEffect(() => {
     fetchBlastRadius()
-  }, [owner, name]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (isLoading) {
-    return (
-      <div className="min-h-[600px] flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 border-4 border-[#333] border-t-orange-500 rounded-full animate-spin" />
-        <p className="text-sm text-gray-400">Analyzing blast radius...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-[600px] flex items-center justify-center">
-        <div className="w-full max-w-md rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-          <p className="text-sm text-red-400 mb-4">{error}</p>
-          <button
-            onClick={fetchBlastRadius}
-            className="px-6 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 transition-colors cursor-pointer"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (hasScanned && (!data || data.length === 0)) {
-    return (
-      <div className="min-h-[600px] flex items-center justify-center">
-        <div className="text-center">
-          <Flame size={48} className="text-gray-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-400">No dependency data available.</p>
-          <p className="text-xs text-gray-600 mt-1">Make sure this repository has been fully analyzed.</p>
-        </div>
-      </div>
-    )
-  }
+  }, [owner, name])
 
   const handleClick = (e, file) => {
-    // Create ripple element
     const ripple = document.createElement('div')
     ripple.style.cssText = `
       position: fixed;
@@ -94,166 +54,326 @@ export default function BlastRadius() {
     }, 350)
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[600px] flex flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-4 border-[var(--border-default)] border-t-[var(--accent-blue)] rounded-full animate-spin" />
+        <p className="text-sm text-[var(--text-secondary)]">Analyzing blast radius impact...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className="w-full max-w-md rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center backdrop-blur-xl">
+          <AlertTriangle className="mx-auto text-red-500 mb-4" size={32} />
+          <p className="text-sm text-red-400 mb-4 font-medium">{error}</p>
+          <button
+            onClick={fetchBlastRadius}
+            className="px-6 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 transition-colors cursor-pointer font-semibold"
+          >
+            Retry Analysis
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (hasScanned && (!data || data.length === 0)) {
+    return (
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <CheckCircle2 size={56} className="text-green-500 mx-auto" />
+          <h3 className="text-xl font-bold text-[var(--text-primary)]">Zero Critical Hotspots</h3>
+          <p className="text-sm text-[var(--text-secondary)] max-w-xs mx-auto leading-relaxed">
+            Your repository architecture looks exceptionally stable with no highly coupled or volatile dependencies detected.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const criticalCount = data.filter(d => d.score >= 70).length
+  const avgScore = Math.round(data.reduce((acc, curr) => acc + curr.score, 0) / data.length) || 0
+
+  const chartData = data.map(d => ({
+    x: d.dependentCount,
+    y: d.score,
+    commits: d.commitFrequency,
+    name: d.path.split('/').pop(),
+    fullPath: d.path,
+    score: d.score
+  }))
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload
+      return (
+        <div className="bg-[#0A0C10]/95 backdrop-blur-md border border-[var(--border-default)] p-3 rounded-lg shadow-2xl max-w-[250px]">
+          <p className="text-sm font-mono text-[var(--text-primary)] truncate mb-1">{data.name}</p>
+          <p className="text-xs text-[var(--text-secondary)]">Impact: <span className="text-[var(--text-primary)] font-bold">{data.x}</span> deps</p>
+          <p className="text-xs text-[var(--text-secondary)]">Volatility: <span className="text-[var(--text-primary)] font-bold">{data.commits}</span> commits</p>
+          <div className="mt-2 text-xs font-bold px-2 py-1 bg-red-500/10 text-red-400 rounded-md inline-block">
+            Risk Score: {data.score}
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-700 pb-12">
       <style>{`
-        @keyframes radarSweep {
-          0% { transform: rotate(0deg); opacity: 0.4; }
-          100% { transform: rotate(360deg); opacity: 0.4; }
-        }
         @keyframes ripple {
           0% { transform: scale(1); opacity: 0.6; }
           100% { transform: scale(2.5); opacity: 0; }
         }
-        @keyframes threatPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-          50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.15); }
+        .modern-card {
+          background: #0D0F14;
+          border: 1px solid #1E222A;
+          border-radius: 16px;
+          transition: all 0.3s ease;
+          position: relative;
         }
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
+        .modern-card:hover {
+          border-color: #2D3342;
+          transform: translateY(-2px);
+          box-shadow: 0 12px 24px -8px rgba(0,0,0,0.5);
+        }
+        .modern-card::before {
+          content: '';
+          position: absolute;
+          top: -1px; left: 20%; right: 20%; height: 1px;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          opacity: 0;
+          transition: opacity 0.3s ease;
+        }
+        .modern-card:hover::before {
+          opacity: 1;
         }
       `}</style>
       
-      <div className="relative overflow-hidden mb-6 p-6 -mx-6 -mt-6">
-        {/* Radar circles */}
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '600px', height: '600px',
-          pointerEvents: 'none', zIndex: 0
-        }}>
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} style={{
-              position: 'absolute', top: '50%', left: '50%',
-              width: `${i * 25}%`, height: `${i * 25}%`,
-              transform: 'translate(-50%, -50%)',
-              border: '1px solid rgba(239, 68, 68, 0.08)',
-              borderRadius: '50%'
-            }} />
-          ))}
-          {/* Sweep line */}
-          <div style={{
-            position: 'absolute', top: '50%', left: '50%',
-            width: '50%', height: '1px',
-            background: 'linear-gradient(90deg, rgba(239,68,68,0.4), transparent)',
-            transformOrigin: '0% 50%',
-            animation: 'radarSweep 4s linear infinite'
-          }} />
-        </div>
-        
-        <div className="flex items-start justify-between gap-4 relative z-10">
-          <div>
-            <h2 className="text-xl font-bold text-white">Riskiest Files to Modify</h2>
-            <p className="text-sm text-gray-400 mt-1">Ranked by transitive impact, complexity, and change frequency</p>
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-[28px] font-semibold text-white tracking-tight leading-none">
+              Blast Radius
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full border border-[#2D3342] bg-[#161B22] text-[11px] font-medium text-[#8B949E] tracking-wide">
+              BETA
+            </span>
           </div>
-          <button
-            onClick={fetchBlastRadius}
-            disabled={isLoading}
-            className="shrink-0 px-4 py-2 rounded-lg bg-[#1a1a1a] hover:bg-[#222] border border-[#333] hover:border-[#444] text-gray-300 hover:text-white text-sm transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-2"
-          >
-            <Flame size={14} />
-            Refresh
-          </button>
+          <p className="text-[14px] text-[#8B949E] max-w-xl">
+            Analyze architectural coupling and structural volatility to identify the most dangerous files to modify.
+          </p>
+        </div>
+        <button
+          onClick={fetchBlastRadius}
+          disabled={isLoading}
+          className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold transition-all active:scale-95 hover:bg-gray-100 disabled:opacity-50 disabled:active:scale-100"
+        >
+          <BarChart2 size={16} />
+          Run Analysis
+        </button>
+      </div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-4 border-b border-[#1E222A]">
+        {/* Critical Hotspots Card */}
+        <div className="modern-card p-6 flex flex-col group">
+          <div className="flex justify-between items-start mb-8">
+            <div className="text-[12px] font-semibold text-[#8B949E] tracking-widest uppercase flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#161B22] flex items-center justify-center border border-[#1E222A]">
+                <Flame size={14} className="text-[#F87171]" />
+              </div>
+              Critical Hotspots
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[44px] font-semibold text-white tracking-tight leading-none">{criticalCount}</span>
+            <span className="text-[13px] font-medium text-[#8B949E]">files</span>
+          </div>
+          <div className="mt-5 flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-[#161B22]">
+            <div className="h-full bg-[#F87171] transition-all duration-1000" style={{ width: `${Math.min(100, (criticalCount/Math.max(1, data.length))*100)}%` }} />
+          </div>
+          <p className="mt-3 text-[12px] text-[#8B949E]">Scoring above 70 risk</p>
+        </div>
+
+        {/* Avg Risk Score Card */}
+        <div className="modern-card p-6 flex flex-col group">
+          <div className="flex justify-between items-start mb-8">
+            <div className="text-[12px] font-semibold text-[#8B949E] tracking-widest uppercase flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#161B22] flex items-center justify-center border border-[#1E222A]">
+                <Activity size={14} className="text-[#FBBF24]" />
+              </div>
+              Avg Risk Score
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[44px] font-semibold text-white tracking-tight leading-none">{avgScore}</span>
+            <span className="text-[13px] font-medium text-[#8B949E]">/ 100</span>
+          </div>
+          <div className="mt-5 flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-[#161B22]">
+             <div className="h-full bg-[#FBBF24] transition-all duration-1000" style={{ width: `${avgScore}%` }} />
+          </div>
+          <p className="mt-3 text-[12px] text-[#8B949E]">Across all monitored files</p>
+        </div>
+
+        {/* Total Affected Card */}
+        <div className="modern-card p-6 flex flex-col group">
+          <div className="flex justify-between items-start mb-8">
+            <div className="text-[12px] font-semibold text-[#8B949E] tracking-widest uppercase flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-[#161B22] flex items-center justify-center border border-[#1E222A]">
+                <GitBranch size={14} className="text-[#60A5FA]" />
+              </div>
+              Total Affected
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[44px] font-semibold text-white tracking-tight leading-none">
+              {data.reduce((acc, curr) => acc + curr.dependentCount, 0)}
+            </span>
+            <span className="text-[13px] font-medium text-[#8B949E]">deps</span>
+          </div>
+          <div className="mt-5 flex gap-1 h-1.5 w-full rounded-full overflow-hidden bg-[#161B22]">
+            <div className="h-full bg-[#60A5FA] w-full opacity-50" />
+          </div>
+          <p className="mt-3 text-[12px] text-[#8B949E]">Downstream transitive dependencies</p>
         </div>
       </div>
 
-      <div className="space-y-3">
-        {data?.map((file, index) => {
-          let styleOverrides = {
-            animation: `fadeSlideIn 0.4s ease forwards`,
-            animationDelay: `${index * 60}ms`,
-            opacity: 0,
-            background: '#111',
-            border: '1px solid #222',
-            borderRadius: '12px',
-            padding: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            position: 'relative'
-          }
-          
-          let badge = null
-          
-          if (index === 0) {
-            styleOverrides.borderLeft = '3px solid #ef4444'
-            styleOverrides.boxShadow = '0 0 20px rgba(239,68,68,0.1)'
-            badge = <span style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.1em', position: 'absolute', top: '16px', right: '16px' }}>CRITICAL</span>
-          } else if (index === 1) {
-            styleOverrides.borderLeft = '3px solid #f59e0b'
-            badge = <span style={{ background: 'rgba(245,158,11,0.15)', border: '1px solid rgba(245,158,11,0.4)', color: '#f59e0b', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.1em', position: 'absolute', top: '16px', right: '16px' }}>HIGH RISK</span>
-          } else if (index === 2) {
-            styleOverrides.borderLeft = '3px solid #eab308'
-            badge = <span style={{ background: 'rgba(234,179,8,0.15)', border: '1px solid rgba(234,179,8,0.4)', color: '#eab308', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', letterSpacing: '0.1em', position: 'absolute', top: '16px', right: '16px' }}>ELEVATED</span>
-          }
-
-          if (file.riskLevel === 'high') {
-            styleOverrides.animation = `fadeSlideIn 0.4s ease forwards, threatPulse 3s ease-in-out infinite`
-            styleOverrides.animationDelay = `${index * 60}ms, ${index * 60 + 400}ms`
-          }
-          
-          return (
-            <div
-              key={file.path}
-              style={styleOverrides}
-              className="group cursor-pointer hover:bg-[#161616] transition-colors"
-              onClick={(e) => handleClick(e, file)}
-            >
-              {badge}
-              <div className="flex-1 min-w-0 space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-gray-200 truncate">{file.path}</span>
-                </div>
-                
-                <p className="text-sm text-gray-400 leading-relaxed pr-24">{file.reason}</p>
-                
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400 flex items-center gap-1.5">
-                    <GitBranch size={11} />
-                    {file.dependentCount} dependents
-                  </span>
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
-                    {file.entryPointsAffected} entry points
-                  </span>
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-[#1a1a1a] border border-[#333] text-gray-400">
-                    {file.commitFrequency} commits
-                  </span>
-                </div>
-              </div>
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Left Column: Risk List */}
+        <div className="lg:col-span-7 space-y-6">
+          <h3 className="text-lg font-bold text-[var(--text-primary)] border-b border-[var(--border-default)] pb-3">
+            Top Vulnerable Components
+          </h3>
+          <div className="space-y-4">
+            {data.slice(0, 10).map((file, index) => {
+              const isCritical = file.score >= 70
+              const isHigh = file.score >= 50 && file.score < 70
               
-              <div className="shrink-0 flex flex-col items-center justify-center min-w-[100px] border-l border-[#222] pl-6 pt-6">
-                <div style={{ position: 'relative', width: '64px', height: '64px' }}>
-                  <svg width="64" height="64" style={{ position: 'absolute', top: 0, left: 0 }}>
-                    <circle cx="32" cy="32" r="28" stroke="#222" strokeWidth="4" fill="none"/>
-                    <circle cx="32" cy="32" r="28"
-                      stroke={
-                        file.score >= 60 ? '#ef4444' : 
-                        file.score >= 30 ? '#f59e0b' : '#22c55e'
-                      }
-                      strokeWidth="4" fill="none"
-                      strokeDasharray={`${2 * Math.PI * 28}`}
-                      strokeDashoffset={`${2 * Math.PI * 28 * (1 - file.score / 100)}`}
-                      transform="rotate(-90 32 32)"
-                      style={{ transition: 'stroke-dashoffset 1s ease' }}
-                    />
-                  </svg>
-                  <div style={{
-                    position: 'absolute', inset: 0,
-                    display: 'flex', alignItems: 'center', 
-                    justifyContent: 'center',
-                    fontSize: '14px', fontWeight: 'bold',
-                    color: file.score >= 60 ? '#ef4444' : 
-                           file.score >= 30 ? '#f59e0b' : '#22c55e'
-                  }}>
-                    {file.score}
+              const accentColor = isCritical ? 'rgba(239, 68, 68, 1)' : isHigh ? 'rgba(245, 158, 11, 1)' : 'rgba(234, 179, 8, 1)'
+              const accentBg = isCritical ? 'rgba(239, 68, 68, 0.08)' : isHigh ? 'rgba(245, 158, 11, 0.08)' : 'rgba(234, 179, 8, 0.08)'
+
+              return (
+                <div
+                  key={file.path}
+                  onClick={(e) => handleClick(e, file)}
+                  className="group relative cursor-pointer overflow-hidden transition-all duration-300"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-default)',
+                    borderLeft: `3px solid ${accentColor}`,
+                    borderRadius: '12px',
+                    padding: '20px'
+                  }}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: `linear-gradient(90deg, ${accentBg}, transparent)` }} />
+                  
+                  <div className="relative z-10 flex items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-sm font-semibold text-[var(--text-primary)] truncate block" title={file.path}>
+                          {file.path.split('/').pop()}
+                        </span>
+                        <span className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-sm" style={{ color: accentColor, background: accentBg }}>
+                          {isCritical ? 'Critical' : isHigh ? 'High Risk' : 'Elevated'}
+                        </span>
+                      </div>
+                      
+                      <div className="text-xs text-[var(--text-secondary)] font-mono truncate opacity-60 mb-3">
+                        {file.path}
+                      </div>
+
+                      <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-4">
+                        {file.reason}
+                      </p>
+                      
+                      <div className="flex flex-wrap gap-2">
+                        <span className="text-xs px-2.5 py-1 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] flex items-center gap-1.5 font-medium">
+                          <GitBranch size={12} className="opacity-70" />
+                          {file.dependentCount} Deps
+                        </span>
+                        <span className="text-xs px-2.5 py-1 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] font-medium">
+                          {file.entryPointsAffected} Entry Points
+                        </span>
+                        <span className="text-xs px-2.5 py-1 rounded-md bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] font-medium">
+                          {file.commitFrequency} Commits
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex flex-col items-center justify-center">
+                      <div className="text-3xl font-black" style={{ color: accentColor }}>
+                        {file.score}
+                      </div>
+                      <div className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-widest mt-1">
+                        Score
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <span className="text-xs text-gray-500 uppercase mt-1.5 tracking-wider font-semibold">{file.riskLevel} risk</span>
-              </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Right Column: Scatter Plot */}
+        <div className="lg:col-span-5">
+          <div className="sticky top-28 glass-card p-6">
+            <h3 className="text-base font-bold text-[var(--text-primary)] mb-1">Impact vs Risk Score</h3>
+            <p className="text-xs text-[var(--text-secondary)] mb-6">High impact + high risk = maximum danger zone (top right).</p>
+            
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: -20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default)" vertical={false} />
+                  <XAxis 
+                    type="number" 
+                    dataKey="x" 
+                    name="Dependents" 
+                    stroke="var(--text-secondary)" 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} 
+                    axisLine={{ stroke: 'var(--border-default)' }}
+                    tickLine={false}
+                    label={{ value: 'Dependency Impact', position: 'insideBottom', offset: -10, fill: 'var(--text-secondary)', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    type="number" 
+                    dataKey="y" 
+                    name="Risk Score" 
+                    domain={[0, 100]}
+                    stroke="var(--text-secondary)" 
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} 
+                    axisLine={false}
+                    tickLine={false}
+                    label={{ value: 'Risk Score', angle: -90, position: 'insideLeft', fill: 'var(--text-secondary)', fontSize: 12 }}
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3', stroke: 'var(--border-default)' }} />
+                  <Scatter name="Files" data={chartData} onClick={(data) => navigate(`../graph?highlight=${encodeURIComponent(data.fullPath)}`)} style={{ cursor: 'pointer' }}>
+                    {chartData.map((entry, index) => {
+                      const color = entry.score >= 70 ? '#ef4444' : entry.score >= 50 ? '#f59e0b' : '#3b82f6'
+                      return <Cell key={`cell-${index}`} fill={color} opacity={0.7} className="hover:opacity-100 transition-opacity" />
+                    })}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
             </div>
-          )
-        })}
+            
+            <div className="mt-6 flex items-center justify-center gap-4 text-xs text-[var(--text-secondary)]">
+              <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /> Critical (≥70)</span>
+              <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500" /> High (50-69)</span>
+              <span className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Medium (&lt;50)</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   )
