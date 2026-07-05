@@ -37,19 +37,23 @@ function useCountUp(target, duration = 1200) {
 }
 
 // ─── Constants ─────────────────────────────────────────────────
-const C = {
-  neon: '#00FF26',
-  lime: '#BBE663',
-  dark: '#0A0C10',
-  cardBg: 'rgba(18, 22, 30, 0.85)',
-  panel: '#12161E',
-  slate: '#191919',
-  white: '#FFFFFF',
-  muted: '#6B7280',
-  border: 'rgba(255,255,255,0.07)',
-}
+const getC = (theme) => ({
+  neon: theme === 'dark' ? '#00FF26' : '#3178C6',
+  lime: theme === 'dark' ? '#BBE663' : '#05CD99',
+  dark: theme === 'dark' ? '#0A0C10' : '#F4F7FC',
+  cardBg: theme === 'dark' ? 'rgba(18, 22, 30, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+  panel: theme === 'dark' ? '#12161E' : '#FFFFFF',
+  slate: theme === 'dark' ? '#191919' : '#F8FAFC',
+  white: theme === 'dark' ? '#FFFFFF' : '#0F172A',
+  muted: theme === 'dark' ? '#6B7280' : '#64748B',
+  border: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
+  blast1: theme === 'dark' ? '#12161E' : '#F8FAFC',
+  blast2: theme === 'dark' ? '#1A1F2B' : '#F1F5F9',
+  blast3: theme === 'dark' ? '#252B38' : '#E2E8F0',
+  blast4: theme === 'dark' ? '#3A4255' : '#CBD5E1',
+})
 
-const LANG_BAR_COLORS = [C.neon, C.lime, '#6B7280', '#F59E0B', '#818CF8', '#EC4899']
+const getLangBarColors = (theme) => [getC(theme).neon, getC(theme).lime, '#6B7280', '#F59E0B', '#818CF8', '#EC4899']
 const MOCK_AREA = [8,18,14,32,28,45,40,58,52,78]
 const MOCK_BARS = [18,32,24,44,36,52,44,62,54,72]
 const MOCK_LINE_DOWN = [88,75,80,62,70,52,44,36,28,18]
@@ -65,7 +69,8 @@ const card = {
 }
 
 // ─── Sub-components ─────────────────────────────────────────────
-function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green', sparkData, sparkColor, sparkType = 'area', iconColor, colSpan = 1 }) {
+function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green', sparkData, sparkColor, sparkType = 'area', iconColor, colSpan = 1, theme = 'dark' }) {
+  const C = getC(theme)
   const counted = useCountUp(value)
   const areaData = sparkData.map((v, i) => ({ i, v }))
 
@@ -110,10 +115,12 @@ function KpiCard({ icon: Icon, label, value, badge, badgeClass = 'rl-badge-green
   )
 }
 
-function SectionLabel({ icon: Icon, children, color = C.neon }) {
+function SectionLabel({ icon: Icon, children, color, theme = 'dark' }) {
+  const C = getC(theme)
+  const actualColor = color || C.neon
   return (
     <div className="rl-section-label">
-      <Icon size={14} color={color} />
+      <Icon size={14} color={actualColor} />
       {children}
     </div>
   )
@@ -123,6 +130,7 @@ function SectionLabel({ icon: Icon, children, color = C.neon }) {
 export default function Overview() {
   const { owner, name } = useParams()
   const { theme } = useTheme()
+  const C = getC(theme)
   const [repo, setRepo] = useState(null)
   const [metrics, setMetrics] = useState(null)
   const [blastRadiusData, setBlastRadiusData] = useState([])
@@ -183,10 +191,10 @@ export default function Overview() {
   const getLabel = (item) => item ? (item.name || item.path?.split('/').pop() || 'Unknown') : null
   const getScore = (item) => item ? (item.score ?? item.dependentCount ?? item.impactScore ?? 0) : null
   const circles = [
-    { size: 300, bg: theme === 'dark' ? C.panel : '#E2E8F0', label: getLabel(sortedBlast[0]) || 'Ecosystem', score: getScore(sortedBlast[0]) ?? 85, textColor: theme === 'dark' ? C.neon : '#059669' },
-    { size: 228, bg: theme === 'dark' ? '#1A1F2B' : '#CBD5E1', label: getLabel(sortedBlast[1]) || 'Indirect Deps', score: getScore(sortedBlast[1]) ?? 72, textColor: theme === 'dark' ? C.white : '#0F172A' },
-    { size: 160, bg: theme === 'dark' ? '#252B38' : '#94A3B8', label: getLabel(sortedBlast[2]) || 'Direct Deps', score: getScore(sortedBlast[2]) ?? 64, textColor: theme === 'dark' ? C.lime : '#4D7C0F' },
-    { size: 92, bg: theme === 'dark' ? '#3A4255' : '#64748B', label: getLabel(sortedBlast[3]) || 'Core', score: getScore(sortedBlast[3]) ?? 53, textColor: theme === 'dark' ? C.muted : '#FFFFFF' },
+    { size: 300, bg: C.blast1, label: getLabel(sortedBlast[0]) || 'Ecosystem', score: getScore(sortedBlast[0]) ?? 85, textColor: theme === 'dark' ? C.neon : '#059669' },
+    { size: 228, bg: C.blast2, label: getLabel(sortedBlast[1]) || 'Indirect Deps', score: getScore(sortedBlast[1]) ?? 72, textColor: theme === 'dark' ? C.white : '#0F172A' },
+    { size: 160, bg: C.blast3, label: getLabel(sortedBlast[2]) || 'Direct Deps', score: getScore(sortedBlast[2]) ?? 64, textColor: theme === 'dark' ? C.lime : '#4D7C0F' },
+    { size: 92, bg: C.blast4, label: getLabel(sortedBlast[3]) || 'Core', score: getScore(sortedBlast[3]) ?? 53, textColor: theme === 'dark' ? C.muted : '#FFFFFF' },
   ]
 
   const dnaData = [
@@ -212,6 +220,7 @@ export default function Overview() {
           sparkData={MOCK_AREA}
           sparkColor={C.neon}
           sparkType="area"
+          theme={theme}
         />
         <KpiCard
           icon={FileCode2}
@@ -222,7 +231,8 @@ export default function Overview() {
           sparkData={MOCK_BARS}
           sparkColor={C.lime}
           sparkType="bar"
-          iconColor="187,230,99"
+          iconColor={theme === 'dark' ? "187,230,99" : "5,205,153"}
+          theme={theme}
         />
         <KpiCard
           icon={GitBranch}
@@ -234,6 +244,7 @@ export default function Overview() {
           sparkColor="#818CF8"
           sparkType="area"
           iconColor="129,140,248"
+          theme={theme}
         />
         <KpiCard
           icon={FileX2}
@@ -245,11 +256,12 @@ export default function Overview() {
           sparkColor="#F59E0B"
           sparkType="line"
           iconColor="245,158,11"
+          theme={theme}
         />
 
         {/* ── ROW 2 Left: Repo Profile (span 2) ─────────── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2' }}>
-          <SectionLabel icon={LayoutTemplate} color={C.neon}>Repository Profile</SectionLabel>
+          <SectionLabel icon={LayoutTemplate} color={C.neon} theme={theme}>Repository Profile</SectionLabel>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 28 }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(0,255,38,0.07)', border: `1px solid rgba(0,255,38,0.2)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -287,7 +299,7 @@ export default function Overview() {
 
         {/* ── ROW 2-3 Right: Top Complex Files (span 2, row 2) ── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }} ref={barsRef}>
-          <SectionLabel icon={AlertTriangle} color="#F59E0B">Top Complex Files</SectionLabel>
+          <SectionLabel icon={AlertTriangle} color="#F59E0B" theme={theme}>Top Complex Files</SectionLabel>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
             {topComplexFiles.length > 0 ? topComplexFiles.map((file, i) => {
@@ -298,7 +310,7 @@ export default function Overview() {
               const pct = Math.min(100, Math.round((complexity / (maxComplexity || 1)) * 100))
               const barColor = pct > 75 ? '#FF6B6B' : pct > 50 ? '#F59E0B' : C.lime
               return (
-                <div key={fullPath} style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '12px 14px' }}>
+                <div key={fullPath} style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.025)' : 'rgba(0,0,0,0.025)', border: theme === 'dark' ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)', borderRadius: 10, padding: '12px 14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                       <File size={13} color={barColor} style={{ flexShrink: 0 }} />
@@ -330,7 +342,7 @@ export default function Overview() {
 
         {/* ── ROW 3 Left: Recent Activity (span 2) ──────── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2' }}>
-          <SectionLabel icon={GitCommitHorizontal} color={C.neon}>Recent Commits</SectionLabel>
+          <SectionLabel icon={GitCommitHorizontal} color={C.neon} theme={theme}>Recent Commits</SectionLabel>
 
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, gap: 0, overflowY: 'auto' }}>
             <div className="rl-timeline-line" />
@@ -385,7 +397,7 @@ export default function Overview() {
 
         {/* ── ROW 4-5 Left: Blast Radius (span 2, row 2) ── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
-          <SectionLabel icon={Zap} color={C.neon}>Blast Radius</SectionLabel>
+          <SectionLabel icon={Zap} color={C.neon} theme={theme}>Blast Radius</SectionLabel>
 
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
             <div style={{ position: 'relative', width: 300, height: 300 }}>
@@ -426,7 +438,7 @@ export default function Overview() {
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 20 }}>
             {circles.map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: [C.neon, C.lime, '#818CF8', C.muted][i] }} />
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: [theme === 'dark' ? C.neon : '#059669', theme === 'dark' ? C.lime : '#0F172A', theme === 'dark' ? '#818CF8' : '#4D7C0F', theme === 'dark' ? C.muted : '#FFFFFF'][i] }} />
                 <span style={{ fontSize: 10, color: C.muted, fontFamily: 'JetBrains Mono, monospace' }}>{c.label.slice(0, 12)}</span>
               </div>
             ))}
@@ -435,7 +447,7 @@ export default function Overview() {
 
         {/* ── ROW 4-5 Right: Repository DNA Radar (span 2, row 2) ── */}
         <motion.div variants={card} className="rl-card" style={{ gridColumn: 'span 2', gridRow: 'span 2' }}>
-          <SectionLabel icon={ShieldAlert} color={C.lime}>Repository DNA</SectionLabel>
+          <SectionLabel icon={ShieldAlert} color={C.lime} theme={theme}>Repository DNA</SectionLabel>
 
           <div style={{ flex: 1, minHeight: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
