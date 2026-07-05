@@ -343,26 +343,31 @@ function GraphInner() {
 
       {/* ── Right panel — hidden on mobile unless panelOpen ──────────── */}
       {selectedNode && panelOpen && (
-        <div className="absolute right-0 top-0 h-full w-72 z-10 bg-[#111] border-l border-[#222] p-4 overflow-y-auto flex flex-col gap-4">
+        <div className="absolute right-0 top-0 h-full w-80 z-20 bg-[#0a0a0a]/80 backdrop-blur-xl border-l border-[#ffffff10] p-6 overflow-y-auto flex flex-col gap-6 shadow-2xl transition-all duration-300">
           <div>
-            <p className="font-semibold text-white text-sm">{selectedNode.label}</p>
-            <p className="text-xs text-gray-400 break-all mt-1">{selectedNode.path}</p>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="font-bold text-white text-base tracking-tight truncate pr-4">{selectedNode.label}</p>
+              <button onClick={() => setSelectedNode(null)} className="text-gray-500 hover:text-white transition-colors cursor-pointer shrink-0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-500 break-all font-mono leading-relaxed">{selectedNode.path}</p>
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {selectedNode.language && (
-              <span className="text-xs px-2 py-0.5 rounded-full border border-[#333] text-gray-400">
+              <span className="text-[10px] px-2.5 py-1 rounded-md bg-[#ffffff08] border border-[#ffffff15] text-gray-300 font-medium uppercase tracking-wider">
                 {selectedNode.language}
               </span>
             )}
-            <span className="text-xs px-2 py-0.5 rounded-full border border-[#333] text-gray-400">
+            <span className="text-[10px] px-2.5 py-1 rounded-md bg-[#ffffff08] border border-[#ffffff15] text-gray-300 font-medium uppercase tracking-wider">
               complexity {selectedNode.complexity}
             </span>
             {selectedNode.isDead && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">Dead</span>
+              <span className="text-[10px] px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 font-medium uppercase tracking-wider">Dead</span>
             )}
             {selectedNode.isEntry && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">Entry</span>
+              <span className="text-[10px] px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 font-medium uppercase tracking-wider">Entry</span>
             )}
           </div>
 
@@ -411,11 +416,11 @@ function GraphInner() {
             </>
           )}
 
-          <div className="border-t border-[#222]" />
+          <div className="border-t border-[#ffffff10]" />
 
           {/* Trace */}
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-400">Trace Import Chain</p>
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-300 tracking-wide">Trace Import Chain</p>
             <div className="relative" ref={traceInputRef}>
               <input
                 type="text"
@@ -428,10 +433,10 @@ function GraphInner() {
                 }}
                 onFocus={() => setTraceDropdownOpen(true)}
                 onBlur={() => setTimeout(() => setTraceDropdownOpen(false), 150)}
-                className="w-full text-xs px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-[#333] text-white placeholder:text-gray-600 focus:outline-none focus:border-[#444]"
+                className="w-full text-xs px-3 py-2 rounded-lg bg-[#ffffff05] border border-[#ffffff15] text-white placeholder:text-gray-600 focus:outline-none focus:border-[#444] focus:ring-1 focus:ring-[#444] transition-all"
               />
               {traceDropdownOpen && traceSuggestions.length > 0 && (
-                <ul className="absolute z-50 left-0 right-0 mt-1 bg-[#181818] border border-[#333] rounded-lg overflow-hidden shadow-xl max-h-48 overflow-y-auto">
+                <ul className="absolute z-50 left-0 right-0 mt-1 bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden shadow-2xl max-h-48 overflow-y-auto">
                   {traceSuggestions.map(f => (
                     <li
                       key={f.path}
@@ -439,10 +444,10 @@ function GraphInner() {
                         setTraceTarget(f.path)
                         setTraceDropdownOpen(false)
                       }}
-                      className="px-2.5 py-2 cursor-pointer hover:bg-[#252525] transition-colors"
+                      className="px-3 py-2 cursor-pointer hover:bg-[#252525] transition-colors"
                     >
-                      <p className="text-xs text-white truncate">{f.path.split('/').pop()}</p>
-                      <p className="text-[10px] text-gray-500 truncate mt-0.5">{f.path}</p>
+                      <p className="text-xs text-white truncate font-medium">{f.path.split('/').pop()}</p>
+                      <p className="text-[10px] text-gray-500 truncate mt-0.5 font-mono">{f.path}</p>
                     </li>
                   ))}
                 </ul>
@@ -451,9 +456,9 @@ function GraphInner() {
             <button
               onClick={handleTrace}
               disabled={tracing || !traceTarget.trim()}
-              className="w-full py-1.5 rounded-lg bg-[#1e1e1e] border border-[#333] text-xs text-gray-300
-                         hover:text-white hover:border-[#444] transition-colors cursor-pointer
-                         disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full py-2 rounded-lg bg-[#ffffff08] border border-[#ffffff15] text-xs font-medium text-gray-300
+                         hover:text-white hover:bg-[#ffffff10] transition-colors cursor-pointer
+                         disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
             >
               {tracing ? 'Tracing…' : 'Trace'}
             </button>
@@ -503,12 +508,12 @@ function GraphInner() {
             )}
           </div>
 
-          <div className="border-t border-[#222]" />
+          <div className="border-t border-[#ffffff10]" />
 
           <button
             onClick={() => navigate(`/repo/${owner}/${name}/ai`)}
-            className="py-2 rounded-lg bg-[#1e1e1e] border border-[#333] text-xs text-gray-300
-                       hover:text-white hover:border-[#444] transition-colors cursor-pointer"
+            className="py-2.5 rounded-lg bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] text-xs font-semibold text-gray-200
+                       hover:text-white hover:border-[#555] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             ✨ Explain with AI
           </button>
