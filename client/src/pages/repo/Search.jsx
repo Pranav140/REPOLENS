@@ -204,10 +204,13 @@ export default function Search() {
 
 function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
   const [deps, setDeps] = useState(null)
+  const [fileContent, setFileContent] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [contentLoading, setContentLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    // Fetch dependencies
     api.get(`/api/graph/${owner}/${name}/file`, { params: { path: file.path } })
       .then(r => setDeps(r.data))
       .catch(err => {
@@ -215,20 +218,27 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
         setError(err.message)
       })
       .finally(() => setLoading(false))
+
+    // Fetch raw file content
+    api.get(`/api/repos/${owner}/${name}/file`, { params: { path: file.path } })
+      .then(r => setFileContent(r.data.content))
+      .catch(() => setFileContent('// Failed to load file content'))
+      .finally(() => setContentLoading(false))
   }, [file.path]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const MAX_SHOW = 10
 
   return (
     <Dialog open onOpenChange={open => { if (!open) onClose() }}>
-      <DialogContent className="bg-[#111] border-[#222] text-white max-w-lg max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-white text-sm font-mono break-all">
+      <DialogContent className="bg-[#0a0a0a]/95 backdrop-blur-xl border border-[#ffffff15] shadow-2xl text-white max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl p-0">
+        <DialogHeader className="p-6 pb-4 border-b border-[#ffffff10] sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-xl z-10">
+          <DialogTitle className="text-white text-base font-mono break-all flex items-center gap-2">
+            <Code2 size={18} className="text-gray-400" />
             {file.path}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 text-sm">
+        <div className="space-y-6 text-sm p-6 pt-2">
           {/* Badges */}
           <div className="flex flex-wrap gap-1.5">
             {file.language && (
@@ -248,12 +258,12 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
             )}
           </div>
 
-          {/* Stats row — only if data exists on result */}
+          {/* Stats row */}
           {(file.lineCount || file.complexityScore != null || file.functionCount != null) && (
-            <div className="flex gap-4 text-xs text-gray-500">
-              {file.lineCount && <span><span className="text-white font-medium">{file.lineCount}</span> lines</span>}
-              {file.complexityScore != null && <span>complexity <span className="text-white font-medium">{file.complexityScore}</span></span>}
-              {file.functionCount != null && <span><span className="text-white font-medium">{file.functionCount}</span> functions</span>}
+            <div className="flex gap-6 text-xs text-gray-500 bg-[#ffffff05] p-3 rounded-xl border border-[#ffffff0a]">
+              {file.lineCount != null && <span><span className="text-white font-semibold">{file.lineCount}</span> lines</span>}
+              {file.complexityScore != null && <span>complexity <span className="text-white font-semibold">{file.complexityScore}</span></span>}
+              {file.functionCount != null && <span><span className="text-white font-semibold">{file.functionCount}</span> functions</span>}
             </div>
           )}
 
@@ -305,14 +315,40 @@ function FileDetailModal({ owner, name, file, onClose, onExplainAI }) {
             </>
           )}
 
+          {/* File Content Preview */}
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wider">
+              File Content
+            </p>
+            <div className="bg-[#050505] rounded-xl border border-[#ffffff10] relative overflow-hidden">
+              {contentLoading ? (
+                <div className="p-4 space-y-2">
+                  <Skeleton className="h-4 w-1/3 bg-[#1e1e1e]" />
+                  <Skeleton className="h-4 w-1/2 bg-[#1e1e1e]" />
+                  <Skeleton className="h-4 w-2/3 bg-[#1e1e1e]" />
+                </div>
+              ) : fileContent ? (
+                <pre className="p-4 text-[11px] font-mono text-gray-300 overflow-x-auto max-h-[300px] overflow-y-auto custom-scrollbar">
+                  <code>{fileContent}</code>
+                </pre>
+              ) : (
+                <div className="p-8 text-center text-gray-500 text-xs">
+                  Content not available
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Explain with AI */}
-          <button
-            onClick={onExplainAI}
-            className="w-full py-2 rounded-lg bg-[#1e1e1e] border border-[#333] text-sm
-                       text-gray-300 hover:text-white hover:border-[#444] transition-colors cursor-pointer"
-          >
-            ✨ Explain with AI
-          </button>
+          <div className="pt-2">
+            <button
+              onClick={onExplainAI}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] text-sm font-semibold
+                         text-gray-200 hover:text-white hover:border-[#555] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              ✨ Explain with AI
+            </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

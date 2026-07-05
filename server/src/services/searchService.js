@@ -23,6 +23,11 @@ async function searchRepository(repositoryId, query, type) {
         type: 'file',
         language: file.language,
         matchedOn: 'filename',
+        isDead: file.isDead,
+        isEntry: file.isEntry,
+        complexityScore: file.complexityScore,
+        lineCount: file.lineCount,
+        functionCount: file.functions?.length || 0,
       });
     }
 

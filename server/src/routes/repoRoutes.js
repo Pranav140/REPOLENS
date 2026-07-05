@@ -389,4 +389,24 @@ router.get('/:owner/:name/commits/:sha', async (req, res, next) => {
   }
 });
 
+// GET /api/repos/:owner/:name/file
+// Fetch file content
+router.get('/:owner/:name/file', async (req, res, next) => {
+  try {
+    const { owner, name } = req.params;
+    const { path } = req.query;
+    if (!path) {
+      return res.status(400).json({ error: 'Bad Request', message: 'Query param "path" is required' });
+    }
+    const token = req.user.accessToken;
+    const repo = await getDbRepo(owner, name);
+    if (!repo) return;
+    
+    const content = await githubService.getFileContent(owner, name, path, token);
+    return res.status(200).json({ content });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
