@@ -1,250 +1,288 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import ConstellationMap from '../components/shared/ConstellationMap'
 import Navbar from '../components/shared/Navbar'
 import RepositoryCard from '../components/shared/RepositoryCard'
 import ImportRepoModal from '../components/shared/ImportRepoModal'
 import { Alert } from '../components/ui/alert'
-import { Plus, GitBranch, TrendingUp, Users, Activity, ShieldCheck, GitCommit } from 'lucide-react'
+import { Plus, GitBranch, Star, GitFork, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import api from '../api/api'
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, Cell } from 'recharts'
 
-function useCountUp(target, duration = 600) {
-  const [count, setCount] = useState(0)
-
+function useCountUp(target, dur = 800) {
+  const [n, setN] = useState(0)
   useEffect(() => {
-    if (target === 0) return
-    let start = null
-    const animate = (timestamp) => {
-      if (!start) start = timestamp
-      const progress = Math.min((timestamp - start) / duration, 1)
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.round(eased * target))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [target, duration])
-
-  return count
+    if (!target) { setN(0); return }
+    let s = null
+    const run = ts => { if (!s) s = ts; const p = Math.min((ts-s)/dur,1); setN(Math.round((1-Math.pow(1-p,3))*target)); if(p<1) requestAnimationFrame(run) }
+    requestAnimationFrame(run)
+  }, [target, dur])
+  return n
 }
 
-const mockActivityData = [
-  { name: 'Jan', commits: 120, prs: 15 },
-  { name: 'Feb', commits: 250, prs: 30 },
-  { name: 'Mar', commits: 180, prs: 22 },
-  { name: 'Apr', commits: 390, prs: 45 },
-  { name: 'May', commits: 280, prs: 32 },
-  { name: 'Jun', commits: 450, prs: 60 },
-  { name: 'Jul', commits: 600, prs: 85 },
-]
+const TIP = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background:'#0D111A', border:'1px solid #1E2A3A', borderRadius:8, padding:'8px 12px' }}>
+      {label && <p style={{ fontSize:10, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:5 }}>{label}</p>}
+      {payload.map((e,i) => (
+        <div key={i} style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ width:7, height:7, borderRadius:'50%', background: e.color || e.fill }} />
+          <span style={{ fontSize:12, color:'#94a3b8' }}>{e.name}</span>
+          <span style={{ fontSize:13, fontWeight:800, color:'#fff', marginLeft:8 }}>{e.value}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// GitHub-style contribution heatmap (seeded visual)
+function Heatmap() {
+  const weeks = useMemo(() => {
+    let s = 99; const r = () => { s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff }
+    return Array.from({length:18}, () => Array.from({length:7}, () => Math.floor(r()*5)))
+  }, [])
+  const cols = ['#0d1117','#1a2235','#213352','#2d4a7a','#3b82f6']
+  return (
+    <div>
+      <div style={{ display:'flex', gap:3 }}>
+        {weeks.map((week,wi) => (
+          <div key={wi} style={{ display:'flex', flexDirection:'column', gap:3 }}>
+            {week.map((v,di) => (
+              <div key={di} style={{ width:12, height:12, borderRadius:2, background:cols[v] }} />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:8, justifyContent:'flex-end' }}>
+        <span style={{ fontSize:10, color:'#334155' }}>Less</span>
+        {cols.map((c,i) => <div key={i} style={{ width:10, height:10, borderRadius:2, background:c }} />)}
+        <span style={{ fontSize:10, color:'#334155' }}>More</span>
+      </div>
+    </div>
+  )
+}
+
+// Real repo timeline
+function RepoTimeline({ repos }) {
+  if (!repos.length) return <p style={{ color:'#334155', fontSize:13 }}>No repos imported yet.</p>
+  const sorted = [...repos].sort((a,b) => new Date(a.analyzedAt||a.createdAt||0) - new Date(b.analyzedAt||b.createdAt||0))
+  return (
+    <div style={{ position:'relative', paddingLeft:20 }}>
+      <div style={{ position:'absolute', left:6, top:6, bottom:6, width:1, background:'linear-gradient(180deg, #3b82f6, #1E2A3A)' }} />
+      {sorted.map((repo, i) => {
+        const dt = repo.analyzedAt ? new Date(repo.analyzedAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'Pending'
+        const dotColor = repo.status==='completed'?'#22c55e': repo.status==='analyzing'?'#3b82f6': repo.status==='failed'?'#ef4444':'#f59e0b'
+        return (
+          <div key={repo._id} style={{ display:'flex', alignItems:'flex-start', gap:14, marginBottom: i<sorted.length-1?20:0 }}>
+            <div style={{ width:13, height:13, borderRadius:'50%', background:dotColor, border:'2px solid #070B12', flexShrink:0, marginTop:2, boxShadow:`0 0 8px ${dotColor}60`, marginLeft:-7 }} />
+            <div style={{ flex:1 }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <span style={{ fontSize:13, fontWeight:700, color:'#e2e8f0', fontFamily:'monospace' }}>{repo.owner}/{repo.name}</span>
+                <span style={{ fontSize:11, color:'#475569', fontFamily:'monospace' }}>{dt}</span>
+              </div>
+              <div style={{ display:'flex', gap:10, marginTop:5 }}>
+                <span style={{ fontSize:11, color: dotColor, background:`${dotColor}15`, border:`1px solid ${dotColor}30`, borderRadius:20, padding:'2px 8px', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>{repo.status}</span>
+                {repo.language && <span style={{ fontSize:11, color:'#64748b' }}>{repo.language}</span>}
+                {repo.metrics?.healthScore > 0 && <span style={{ fontSize:11, color:'#64748b' }}>Health: <strong style={{ color:'#94a3b8' }}>{repo.metrics.healthScore}</strong></span>}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const [repos, setRepos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [showImportModal, setShowImportModal] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
   async function fetchRepos() {
-    try {
-      setError(null)
-      const res = await api.get('/api/repos')
-      setRepos(res.data)
-    } catch (err) {
-      console.error('Fetch Repos Error:', err)
-      setError(err.response?.data?.message || 'Failed to load repositories')
-    } finally {
-      setLoading(false)
-    }
+    try { setError(null); const r = await api.get('/api/repos'); setRepos(r.data) }
+    catch(e) { setError(e.response?.data?.message || 'Failed to load') }
+    finally { setLoading(false) }
   }
-
   useEffect(() => { fetchRepos() }, [])
-  const repoCount = useCountUp(repos.length, 600)
-  const commitsCount = useCountUp(1420, 800)
-  const healthScore = useCountUp(94, 1000)
 
-  // Custom Recharts Tooltip
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-[#121620] border border-white/10 rounded-xl p-4 shadow-2xl backdrop-blur-md">
-          <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center justify-between gap-6 mb-1 last:mb-0">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                <span className="text-gray-300 text-sm">{entry.name}</span>
-              </div>
-              <span className="text-white font-bold">{entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  const completed  = useMemo(() => repos.filter(r=>r.status==='completed'), [repos])
+  const totalStars = useMemo(() => repos.reduce((a,r)=>a+(r.stars||0),0), [repos])
+  const totalForks = useMemo(() => repos.reduce((a,r)=>a+(r.forks||0),0), [repos])
+  const coverage   = useMemo(() => repos.length ? Math.round((completed.length/repos.length)*100) : 0, [repos, completed])
+  const topRepo    = useMemo(() => [...completed].sort((a,b)=>(b.metrics?.healthScore||0)-(a.metrics?.healthScore||0))[0], [completed])
+
+  // Comparison chart: per-repo bars for health + stars
+  const compData = useMemo(() =>
+    repos.map(r => ({
+      name: r.name,
+      health: r.metrics?.healthScore || 0,
+      stars: r.stars || 0,
+      forks: r.forks || 0,
+    })), [repos])
+
+  const repoAnim  = useCountUp(repos.length, 600)
+  const starsAnim = useCountUp(totalStars, 700)
+  const forksAnim = useCountUp(totalForks, 700)
+  const covAnim   = useCountUp(coverage, 900)
+
+  const kpis = [
+    { label:'Repositories',       value: repoAnim,          unit:'',   icon:<GitBranch size={17}/>, accent:'#3b82f6' },
+    { label:'Analysis Coverage',  value: `${covAnim}`,       unit:'%',  icon:<CheckCircle2 size={17}/>, accent:'#22c55e' },
+    { label:'Total GitHub Stars', value: starsAnim,          unit:'',   icon:<Star size={17}/>, accent:'#f59e0b' },
+    { label:'Total Forks',        value: forksAnim,          unit:'',   icon:<GitFork size={17}/>, accent:'#a78bfa' },
+  ]
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[var(--bg-base)]">
-      {/* Modern CSS Grid background */}
-      <div 
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)`,
-          backgroundSize: '40px 40px',
-          maskImage: 'radial-gradient(circle at center, black 40%, transparent 100%)',
-          WebkitMaskImage: 'radial-gradient(circle at center, black 40%, transparent 100%)'
-        }}
-      />
+    <div style={{ minHeight:'100vh', background:'#070B12', color:'#e2e8f0' }}>
+      <div style={{ position:'fixed', inset:0, zIndex:0, pointerEvents:'none', backgroundImage:'radial-gradient(ellipse 70% 50% at 15% 0%, rgba(59,130,246,0.06) 0%, transparent 60%)' }}/>
+      <div style={{ position:'relative', zIndex:10 }}>
+        <Navbar/>
+        <main style={{ paddingTop:80, paddingBottom:80, paddingLeft:'max(20px,3vw)', paddingRight:'max(20px,3vw)', maxWidth:1400, margin:'0 auto' }}>
 
-      <div className="relative z-10">
-        <Navbar />
-
-        <main className="pt-20 pb-12 px-6 max-w-[1400px] mx-auto w-full">
-          {/* Top Analytics Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12 animate-[fadeSlideUp_400ms_ease_forwards]">
-            
-            {/* KPI Column */}
-            <div className="flex flex-col gap-6">
-              {/* Card 1 */}
-              <div className="group relative overflow-hidden rounded-3xl bg-[#131822] border border-white/5 p-6 shadow-xl hover:border-white/10 transition-all duration-300">
-                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-blue)] to-transparent opacity-0 group-hover:opacity-50 transition-opacity" />
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[var(--accent-blue)]/10 flex items-center justify-center border border-[var(--accent-blue)]/20 text-[var(--accent-blue)]">
-                    <TrendingUp size={24} />
-                  </div>
-                  <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">+12%</span>
-                </div>
-                <h3 className="text-gray-400 text-sm font-medium mb-1">Total Repositories</h3>
-                <div className="text-4xl font-extrabold text-white tracking-tight">{repoCount}</div>
-              </div>
-
-              {/* Card 2 */}
-              <div className="group relative overflow-hidden rounded-3xl bg-[#131822] border border-white/5 p-6 shadow-xl hover:border-white/10 transition-all duration-300">
-                <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-purple-500 to-transparent opacity-0 group-hover:opacity-50 transition-opacity" />
-                <div className="flex justify-between items-start mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-400">
-                    <ShieldCheck size={24} />
-                  </div>
-                  <span className="text-green-400 bg-green-400/10 px-2.5 py-1 rounded-full text-xs font-bold tracking-wide">+5%</span>
-                </div>
-                <h3 className="text-gray-400 text-sm font-medium mb-1">Avg Health Score</h3>
-                <div className="text-4xl font-extrabold text-white tracking-tight">{healthScore}<span className="text-xl text-gray-500">/100</span></div>
-              </div>
-            </div>
-
-            {/* Main Area Chart */}
-            <div className="lg:col-span-2 group relative overflow-hidden rounded-3xl bg-[#131822] border border-white/5 p-6 shadow-xl hover:border-white/10 transition-all duration-300 flex flex-col">
-              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-blue)] to-transparent opacity-0 group-hover:opacity-50 transition-opacity" />
-              
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h3 className="text-xl font-bold text-white tracking-tight">Platform Activity</h3>
-                  <p className="text-sm text-gray-400 mt-1">Total commits and pull requests over time</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-[var(--accent-blue)]" />
-                    <span className="text-sm text-gray-300 font-medium">Commits</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-purple-500" />
-                    <span className="text-sm text-gray-300 font-medium">PRs</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 min-h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={mockActivityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorCommits" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--accent-blue)" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="var(--accent-blue)" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorPrs" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4}/>
-                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                    <RechartsTooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                    <Area type="monotone" dataKey="commits" name="Commits" stroke="var(--accent-blue)" strokeWidth={3} fillOpacity={1} fill="url(#colorCommits)" />
-                    <Area type="monotone" dataKey="prs" name="Pull Requests" stroke="#a855f7" strokeWidth={3} fillOpacity={1} fill="url(#colorPrs)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-
-          {/* Repositories Header */}
-          <div className="flex items-center justify-between mb-8 opacity-0 animate-[fadeSlideUp_400ms_ease_forwards]" style={{ animationDelay: '150ms' }}>
+          {/* ── Header ─────────────────────────────────────────────────────── */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', paddingTop:36, paddingBottom:32, borderBottom:'1px solid #0F1520', marginBottom:28 }}>
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">Active Projects</h2>
-              <p className="text-sm mt-1 text-[var(--text-secondary)]">Manage and monitor your imported repositories</p>
+              <p style={{ fontSize:11, fontWeight:700, color:'#3b82f6', textTransform:'uppercase', letterSpacing:'0.14em', marginBottom:8 }}>Workspace Overview</p>
+              <h1 style={{ fontSize:'clamp(26px,3.5vw,40px)', fontWeight:900, color:'#f8fafc', letterSpacing:'-0.03em', lineHeight:1.1 }}>Repository Dashboard</h1>
             </div>
-            
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="group relative overflow-hidden rounded-xl px-5 py-2.5 font-bold transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center gap-2 shadow-lg hover:shadow-xl"
-              style={{ background: 'var(--text-primary)', color: 'var(--bg-base)' }}
-            >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <Plus size={18} className="transition-transform group-hover:rotate-90" />
-              <span>Import Repo</span>
+            <button onClick={() => setShowModal(true)} style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', background:'#e2e8f0', color:'#070B12', borderRadius:10, border:'none', fontSize:13, fontWeight:700, cursor:'pointer', transition:'background 0.15s' }}
+              onMouseEnter={e=>e.currentTarget.style.background='#fff'} onMouseLeave={e=>e.currentTarget.style.background='#e2e8f0'}>
+              <Plus size={14} strokeWidth={2.5}/> Import Repo
             </button>
           </div>
 
-          {/* Loading Skeleton */}
+          {/* ── Constellation ──────────────────────────────────────────────── */}
+          <ConstellationMap repos={repos}/>
+
+          {/* ── Stats Ticker ───────────────────────────────────────────────── */}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', marginBottom:22, background:'#0D111A', border:'1px solid #1E2A3A', borderRadius:16, overflow:'hidden' }}>
+            {[
+              { label:'Repositories', value: repoAnim, unit:'', sub: `${completed.length} analyzed`, accent:'#3b82f6',
+                bar: repos.map(r=>({ color: r.status==='completed'?'#22c55e':r.status==='analyzing'?'#3b82f6':'#f59e0b', w: 100/Math.max(repos.length,1) })) },
+              { label:'Coverage', value: covAnim, unit:'%', sub: `${repos.length - completed.length} pending`, accent:'#22c55e', progress: covAnim },
+              { label:'GitHub Stars', value: starsAnim, unit:'', sub: topRepo ? `★ Best: ${topRepo.name}` : 'No repos yet', accent:'#f59e0b' },
+              { label:'Total Forks', value: forksAnim, unit:'', sub: 'across all repositories', accent:'#a78bfa' },
+            ].map((s, i) => (
+              <div key={i} style={{ padding:'22px 24px', borderRight: i<3?'1px solid #1E2A3A':'none', position:'relative', overflow:'hidden' }}>
+                {/* Accent glow blob */}
+                <div style={{ position:'absolute', top:-20, right:-20, width:80, height:80, borderRadius:'50%', background:`${s.accent}08`, filter:'blur(20px)', pointerEvents:'none' }}/>
+                <p style={{ fontSize:10, fontWeight:700, color:'#334155', textTransform:'uppercase', letterSpacing:'0.14em', marginBottom:12 }}>{s.label}</p>
+                <div style={{ display:'flex', alignItems:'baseline', gap:4, marginBottom:10 }}>
+                  <span style={{ fontSize:44, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.05em', lineHeight:1, fontFamily:'monospace' }}>{s.value}</span>
+                  {s.unit && <span style={{ fontSize:22, fontWeight:700, color:s.accent }}>{s.unit}</span>}
+                </div>
+                {/* Progress bar for coverage */}
+                {s.progress !== undefined && (
+                  <div style={{ height:3, background:'#12161E', borderRadius:2, overflow:'hidden', marginBottom:8 }}>
+                    <div style={{ height:'100%', width:`${s.progress}%`, background:`linear-gradient(90deg,#22c55e,#4ade80)`, borderRadius:2, transition:'width 1s ease' }}/>
+                  </div>
+                )}
+                {/* Mini repo breakdown for first stat */}
+                {s.bar && repos.length > 0 && (
+                  <div style={{ display:'flex', gap:2, marginBottom:8, height:3 }}>
+                    {repos.map((r,ri) => (
+                      <div key={ri} style={{ flex:1, background: r.status==='completed'?'#22c55e':r.status==='analyzing'?'#3b82f6':'#334155', borderRadius:2 }}/>
+                    ))}
+                  </div>
+                )}
+                <p style={{ fontSize:11, color:'#334155', marginTop: s.bar||s.progress!==undefined ? 0 : 4, fontFamily: s.label==='GitHub Stars'?'monospace':'inherit', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+
+          {/* ── Row: Top Performer + Repo Timeline + Heatmap ───────────────── */}
+          <div style={{ display:'grid', gridTemplateColumns:'240px 1fr 300px', gap:18, marginBottom:22 }}>
+
+            {/* Top Performer card */}
+            <div style={{ background:'#0D111A', border:'1px solid #1E2A3A', borderRadius:16, padding:22, display:'flex', flexDirection:'column', justifyContent:'space-between' }}>
+              <div>
+                <p style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16 }}>Top Performer</p>
+                {topRepo ? (
+                  <>
+                    <div style={{ fontSize:15, fontWeight:800, color:'#f8fafc', fontFamily:'monospace', marginBottom:6, wordBreak:'break-all' }}>{topRepo.name}</div>
+                    <div style={{ fontSize:12, color:'#64748b', marginBottom:20 }}>{topRepo.owner}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+                      <div style={{ flex:1, height:6, background:'#12161E', borderRadius:3, overflow:'hidden' }}>
+                        <div style={{ height:'100%', width:`${topRepo.metrics?.healthScore ?? 0}%`, background:'#22c55e', borderRadius:3 }}/>
+                      </div>
+                      <span style={{ fontSize:13, fontWeight:800, color:'#22c55e', fontFamily:'monospace', flexShrink:0 }}>{topRepo.metrics?.healthScore ?? 0}</span>
+                    </div>
+                    <div style={{ fontSize:11, color:'#334155' }}>Health Score</div>
+                  </>
+                ) : (
+                  <div style={{ color:'#334155', fontSize:13, marginTop:10 }}>Analyze a repo to see the top performer.</div>
+                )}
+              </div>
+              <div style={{ paddingTop:16, borderTop:'1px solid #0F1520', marginTop:16 }}>
+                <p style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:12 }}>Status Breakdown</p>
+                {[['Completed','#22c55e',repos.filter(r=>r.status==='completed').length],
+                  ['Analyzing','#3b82f6',repos.filter(r=>r.status==='analyzing').length],
+                  ['Pending',  '#f59e0b',repos.filter(r=>r.status==='pending').length],
+                  ['Failed',   '#ef4444',repos.filter(r=>r.status==='failed').length],
+                ].filter(s=>s[2]>0).map(([l,c,n])=>(
+                  <div key={l} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <div style={{ width:6, height:6, borderRadius:'50%', background:c, boxShadow:`0 0 5px ${c}` }}/>
+                      <span style={{ fontSize:12, color:'#94a3b8' }}>{l}</span>
+                    </div>
+                    <span style={{ fontSize:12, fontWeight:800, color:c }}>{n}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Repository Timeline */}
+            <div style={{ background:'#0D111A', border:'1px solid #1E2A3A', borderRadius:16, padding:24 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:20 }}>Repository Timeline</p>
+              <RepoTimeline repos={repos}/>
+            </div>
+
+            {/* Activity Heatmap */}
+            <div style={{ background:'#0D111A', border:'1px solid #1E2A3A', borderRadius:16, padding:22 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:6 }}>Analysis Activity</p>
+              <p style={{ fontSize:12, color:'#334155', marginBottom:20 }}>18-week contribution grid</p>
+              <Heatmap/>
+            </div>
+          </div>
+
+
+          {/* ── Active Projects header ──────────────────────────────────────────── */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+            <div>
+              <h2 style={{ fontSize:19, fontWeight:900, color:'#f8fafc', letterSpacing:'-0.02em', marginBottom:3 }}>Active Projects</h2>
+              <p style={{ fontSize:12, color:'#64748b' }}>{repos.length} repositories imported</p>
+            </div>
+          </div>
+
+
           {loading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-[200px] rounded-3xl bg-[#131822] border border-white/5 animate-pulse" />
-              ))}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
+              {[1,2,3].map(i=><div key={i} style={{ height:160, borderRadius:14, background:'#0D111A', border:'1px solid #1E2A3A' }}/>)}
             </div>
           )}
-
-          {/* Error State */}
           {error && !loading && (
-            <Alert className="border border-red-500/30 bg-red-500/10 text-red-400 p-4 rounded-2xl">
-              {error}
-            </Alert>
+            <Alert style={{ border:'1px solid rgba(239,68,68,0.2)', background:'rgba(239,68,68,0.05)', color:'#ef4444', borderRadius:10, padding:14, fontSize:13 }}>{error}</Alert>
           )}
-
-          {/* Empty State */}
-          {!loading && !error && repos.length === 0 && (
-            <div className="w-full rounded-3xl border border-dashed border-gray-300 dark:border-white/10 bg-[#131822] p-16 flex flex-col items-center justify-center text-center animate-[fadeIn_400ms_ease_forwards]">
-              <div className="w-20 h-20 rounded-[20px] bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/20 flex items-center justify-center mb-6">
-                <GitBranch size={36} className="text-[var(--accent-blue)]" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-3 tracking-tight">No repositories yet</h2>
-              <p className="text-gray-400 text-sm max-w-md mx-auto mb-8">
-                Import a GitHub repository to start analyzing its structure, dependencies, and health in real-time.
-              </p>
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="rounded-xl px-6 py-3 bg-[var(--accent-blue)] text-white font-bold transition-all hover:bg-blue-600 active:scale-95 flex items-center gap-2 shadow-[0_0_20px_rgba(67,24,255,0.3)]"
-              >
-                <Plus size={18} /> Import your first repository
+          {!loading && !error && repos.length===0 && (
+            <div style={{ border:'1px dashed #1E2A3A', borderRadius:18, padding:'60px 32px', display:'flex', flexDirection:'column', alignItems:'center', textAlign:'center', background:'#0D111A' }}>
+              <GitBranch size={30} style={{ color:'#1E2A3A', marginBottom:14 }}/>
+              <h3 style={{ fontSize:17, fontWeight:800, color:'#334155', marginBottom:8 }}>No repositories yet</h3>
+              <p style={{ fontSize:13, color:'#334155', maxWidth:340, lineHeight:1.7, marginBottom:24 }}>Import a GitHub repository to start analyzing its health and code quality in real-time.</p>
+              <button onClick={()=>setShowModal(true)} style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 22px', background:'#3b82f6', color:'#fff', borderRadius:10, border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                <Plus size={14}/> Import your first repository
               </button>
             </div>
           )}
-
-          {/* Grid */}
-          {!loading && !error && repos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {repos.map((repo, index) => (
-                <RepositoryCard key={repo._id} repo={repo} index={index} />
-              ))}
+          {!loading && !error && repos.length>0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
+              {repos.map((repo,i)=><RepositoryCard key={repo._id} repo={repo} index={i}/>)}
             </div>
           )}
         </main>
-
-        <ImportRepoModal
-          open={showImportModal}
-          onClose={() => setShowImportModal(false)}
-          onSuccess={() => { setShowImportModal(false); fetchRepos() }}
-        />
       </div>
+      <ImportRepoModal open={showModal} onClose={()=>setShowModal(false)} onSuccess={()=>{setShowModal(false);fetchRepos()}}/>
     </div>
   )
 }
