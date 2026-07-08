@@ -1,12 +1,6 @@
 # RepoLens
 
-Understand repositories, not just code.
-
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
-![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)
-![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=flat&logo=mongodb&logoColor=white)
-![Gemini AI](https://img.shields.io/badge/Gemini%20AI-8E75B2?style=flat&logo=google&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
+**Understand repositories, not just code.**
 
 RepoLens is a Repository Intelligence Platform that transforms static codebases into an interactive knowledge system. It deeply analyzes JavaScript and TypeScript repositories to compute architectural health metrics, detect structural vulnerabilities, and build comprehensive dependency graphs. By pairing deterministic static analysis with Google's Gemini AI, RepoLens provides actionable insights that help engineering teams understand unfamiliar codebases, plan refactors, and review pull requests safely.
 
