@@ -30,8 +30,10 @@ Modern software development often involves jumping into large, undocumented code
 | Repository Chat | Ask anything about the codebase |
 
 ## Demo
+<img width="904" height="433" alt="image" src="https://github.com/user-attachments/assets/826adea2-df33-4ee1-8802-5d214b001bc7" />
+<img width="959" height="401" alt="image" src="https://github.com/user-attachments/assets/4bbc492c-3187-4926-b908-6934dfa50a4e" />
+<img width="947" height="441" alt="image" src="https://github.com/user-attachments/assets/0dd2ea53-5bdc-4217-a45f-15c280963a6a" />
 
-> Demo video / screenshots coming soon
 
 Import any public GitHub repo — try `expressjs/express` for a good demo.
 
