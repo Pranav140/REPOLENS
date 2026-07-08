@@ -8,6 +8,7 @@ import {
 } from '../../components/ui/collapsible'
 import { Skeleton } from '../../components/ui/skeleton'
 import api from '../../api/api'
+import { useTheme } from '../../contexts/ThemeContext'
 
 const SEV_ORDER = { high: 0, medium: 1, low: 2 }
 
@@ -29,10 +30,10 @@ function SevBadge({ severity }) {
   )
 }
 
-function IssueCard({ issue }) {
+function IssueCard({ issue, theme }) {
   return (
     <div style={{
-      background: '#0d0d0d',
+      background: 'var(--bg-surface)',
       border: `1px solid ${
         issue.severity === 'high' ? 'rgba(239,68,68,0.3)' :
         issue.severity === 'medium' ? 'rgba(245,158,11,0.3)' :
@@ -58,13 +59,13 @@ function IssueCard({ issue }) {
         }}>
           [{issue.severity.toUpperCase()}]
         </span>
-        <span style={{ color: '#888' }}>{issue.type}</span>
-        <span style={{ color: '#555', marginLeft: 'auto' }}>
+        <span style={{ color: 'var(--text-secondary)' }}>{issue.type}</span>
+        <span style={{ color: 'var(--text-muted)', marginLeft: 'auto' }}>
           {issue.filePath.split('/').pop()}:{issue.line}
         </span>
       </div>
       <div style={{ 
-        color: '#aaa', fontSize: '12px', marginTop: '4px' 
+        color: 'var(--text-secondary)', fontSize: '12px', marginTop: '4px' 
       }}>
         {issue.description}
       </div>
@@ -85,6 +86,7 @@ function IssueCard({ issue }) {
 
 export default function Security() {
   const { owner, name } = useParams()
+  const { theme } = useTheme()
   const [issues, setIssues]   = useState([])
   const [summary, setSummary] = useState({})
   const [filter, setFilter]   = useState('all')
@@ -105,14 +107,14 @@ export default function Security() {
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
         {[0,1,2].map(i=>(
-          <div key={i} className="rounded-xl border border-[#222] bg-[#111] p-5 space-y-2">
-            <Skeleton className="h-8 w-12 bg-[#1e1e1e]"/>
-            <Skeleton className="h-3 w-16 bg-[#1e1e1e]"/>
+          <div key={i} className="rounded-xl border p-5 space-y-2" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+            <Skeleton className="h-8 w-12" style={{ background: 'var(--bg-elevated)' }}/>
+            <Skeleton className="h-3 w-16" style={{ background: 'var(--bg-elevated)' }}/>
           </div>
         ))}
       </div>
       {[0,1,2,3].map(i=>(
-        <Skeleton key={i} className="h-20 w-full bg-[#1e1e1e] rounded-xl"/>
+        <Skeleton key={i} className="h-20 w-full rounded-xl" style={{ background: 'var(--bg-surface)' }}/>
       ))}
     </div>
   )
@@ -132,7 +134,7 @@ export default function Security() {
       <div style={{ color: '#22c55e', fontSize: '18px' }}>
         0 vulnerabilities detected
       </div>
-      <div style={{ color: '#555', fontSize: '12px', marginTop: '8px' }}>
+      <div style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '8px' }}>
         scan complete — all checks passed
       </div>
     </div>
@@ -210,11 +212,15 @@ export default function Security() {
 
       {/* Filter tabs */}
       <Tabs value={filter} onValueChange={setFilter}>
-        <TabsList className="bg-[#111] border border-[#222]">
+        <TabsList className="border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
           {['all','high','medium','low'].map(t => (
             <TabsTrigger
               key={t} value={t}
-              className="capitalize text-gray-400 data-[state=active]:bg-[#222] data-[state=active]:text-white"
+              className="capitalize data-[state=active]:bg-[#222] data-[state=active]:text-white"
+              style={{
+                color: filter === t ? (theme === 'dark' ? '#fff' : '#000') : 'var(--text-secondary)',
+                backgroundColor: filter === t ? (theme === 'dark' ? '#222' : 'rgba(49, 120, 198, 0.1)') : 'transparent'
+              }}
             >
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </TabsTrigger>
@@ -223,14 +229,14 @@ export default function Security() {
       </Tabs>
 
       {/* Issue count */}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
         {filtered.length} issue{filtered.length !== 1 ? 's' : ''}
         {filter !== 'all' ? ` · ${filter} severity` : ''}
       </p>
 
       {/* Issues list */}
       <div className="space-y-2">
-        {filtered.map((issue, i) => <IssueCard key={i} issue={issue} />)}
+        {filtered.map((issue, i) => <IssueCard key={i} issue={issue} theme={theme} />)}
       </div>
     </div>
   )
