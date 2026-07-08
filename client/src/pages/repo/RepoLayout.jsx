@@ -144,7 +144,13 @@ export default function RepoLayout() {
 
   const LeftContent = (
     <div className="logo-container" style={{ cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
-      <div className="logo-dot" />
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+        <circle cx="11" cy="11" r="8" stroke="rgba(255,255,255,0.75)" strokeWidth="2" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" />
+        <circle cx="11" cy="11" r="2.5" fill="#3b82f6" />
+        <line x1="5" y1="11" x2="8.5" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+        <line x1="13.5" y1="11" x2="17" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+      </svg>
       <span className="logo-text" style={{ color: '#ffffff' }}>RepoLens</span>
     </div>
   )

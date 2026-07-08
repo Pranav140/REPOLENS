@@ -38,21 +38,13 @@ export default function Navbar() {
         alignItems: 'center',
         gap: '10px'
       }}>
-        <div 
-          style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            background: 'var(--accent-blue)',
-            boxShadow: theme === 'dark' 
-              ? '0 0 10px rgba(47,129,247,0.6)' 
-              : '0 0 10px rgba(9,105,218,0.4)',
-            animation: 'pulseGlow 2.5s ease-in-out infinite',
-            '--glow-color': theme === 'dark'
-              ? 'rgba(47,129,247,0.4)'
-              : 'rgba(9,105,218,0.3)'
-          }}
-        />
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="8" stroke="rgba(255,255,255,0.75)" strokeWidth="2" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" stroke="rgba(255,255,255,0.4)" strokeWidth="2.5" />
+          <circle cx="11" cy="11" r="2.5" fill="#3b82f6" />
+          <line x1="5" y1="11" x2="8.5" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+          <line x1="13.5" y1="11" x2="17" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+        </svg>
         <span style={{ 
           fontWeight: '700',
           fontSize: '15px',
