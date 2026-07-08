@@ -9,56 +9,59 @@
 @tailwind utilities;
 
 @layer base {
-  /* LIGHT THEME DEFAULT (Modern SaaS look) */
+  /* LIGHT THEME — Slate-blue tinted, easy on eyes, resonant with dark mode */
   :root {
-    --bg-base: #F4F7FC;
-    --bg-surface: #FFFFFF;
-    --bg-elevated: #F8FAFC;
-    --bg-overlay: #FFFFFF;
-    
-    --border-subtle: #F1F5F9;
-    --border-default: #E2E8F0;
-    --border-active: #CBD5E1;
-    --border-accent: #00FF26;
-    
-    --text-primary: #0F172A;
-    --text-secondary: #64748B;
-    --text-muted: #94A3B8;
-    --text-link: #3178C6;
-    
-    --accent-blue: #3178C6;
-    --accent-blue-h: #2563EB;
-    --accent-blue-s: #6AD2FF;
-    --accent-blue-bg: rgba(67, 24, 255, 0.08);
-    
-    --success: #05CD99;
-    --success-bg: rgba(5, 205, 153, 0.1);
-    
-    --warning: #FFCE20;
-    --warning-bg: rgba(255, 206, 32, 0.1);
-    
-    --danger: #EE5D50;
-    --danger-bg: rgba(238, 93, 80, 0.1);
-    
-    --neutral: #8F9BBA;
-    --neutral-bg: rgba(143, 155, 186, 0.1);
-    
-    /* Vibrant gradients for modern look */
-    --grad-blue: linear-gradient(135deg, #4318FF 0%, #3914D9 100%);
-    --grad-purple: linear-gradient(135deg, #868CFF 0%, #4318FF 100%);
-    --grad-orange: linear-gradient(135deg, #FFB547 0%, #FF8A4C 100%);
-    --grad-green: linear-gradient(135deg, #05CD99 0%, #01B574 100%);
-    
-    /* Soft, large shadows */
-    --shadow-sm: 0px 4px 10px rgba(112, 144, 176, 0.08);
-    --shadow-md: 0px 18px 40px rgba(112, 144, 176, 0.12);
-    --shadow-lg: 0px 40px 58px -20px rgba(112, 144, 176, 0.15);
-    --shadow-glow-blue: 0 0 0 3px rgba(67, 24, 255, 0.2);
-    
-    --radius-sm: 8px;
-    --radius-md: 12px;
-    --radius-lg: 16px;
-    --radius-xl: 20px;
+    /* Backgrounds — cool blue-gray tints, never pure white */
+    --bg-base:     #ECEEF3;   /* soft slate, like Linear's light bg */
+    --bg-surface:  #F5F6FA;   /* card surfaces — off-white with blue tint */
+    --bg-elevated: #FAFBFD;   /* modals, tooltips */
+    --bg-overlay:  #F5F6FA;
+
+    /* Borders — subtle slate, not harsh gray */
+    --border-subtle:  rgba(49, 120, 198, 0.07);
+    --border-default: rgba(49, 120, 198, 0.14);
+    --border-active:  rgba(49, 120, 198, 0.28);
+    --border-accent:  #3178C6;
+
+    /* Typography — deep navy (same family as dark mode) */
+    --text-primary:   #18243A;   /* rich navy, not pure black */
+    --text-secondary: #4A5A72;   /* muted navy-slate */
+    --text-muted:     #7C8EA6;   /* disabled / placeholder */
+    --text-link:      #3178C6;
+
+    /* Accent — consistent with dark mode */
+    --accent-blue:    #3178C6;
+    --accent-blue-h:  #1E5FAF;
+    --accent-blue-s:  #5B9FD9;
+    --accent-blue-bg: rgba(49, 120, 198, 0.08);
+
+    /* Semantic */
+    --success:      #12A37A;
+    --success-bg:   rgba(18, 163, 122, 0.09);
+    --warning:      #D4900A;
+    --warning-bg:   rgba(212, 144, 10, 0.09);
+    --danger:       #C8433A;
+    --danger-bg:    rgba(200, 67, 58, 0.09);
+    --neutral:      #7C8EA6;
+    --neutral-bg:   rgba(124, 142, 166, 0.09);
+
+    /* Gradients */
+    --grad-blue:   linear-gradient(135deg, #3178C6 0%, #1E5FAF 100%);
+    --grad-purple: linear-gradient(135deg, #7B80D4 0%, #4D52BB 100%);
+    --grad-orange: linear-gradient(135deg, #E8943A 0%, #D4700F 100%);
+    --grad-green:  linear-gradient(135deg, #12A37A 0%, #0D8762 100%);
+
+    /* Shadows — blue-tinted, not generic gray */
+    --shadow-sm:       0px 2px 8px rgba(24, 36, 58, 0.06);
+    --shadow-md:       0px 8px 28px rgba(24, 36, 58, 0.10);
+    --shadow-lg:       0px 24px 48px -12px rgba(24, 36, 58, 0.14);
+    --shadow-glow-blue: 0 0 0 3px rgba(49, 120, 198, 0.18);
+
+    /* Radii */
+    --radius-sm:   8px;
+    --radius-md:   12px;
+    --radius-lg:   16px;
+    --radius-xl:   20px;
     --radius-full: 9999px;
   }
 
