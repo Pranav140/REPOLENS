@@ -33,13 +33,13 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-6">
       <div className="relative w-12 h-12 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border border-[#1E222A]" />
+        <div className="absolute inset-0 rounded-full border border-[var(--border-default)]" />
         <div className="absolute inset-0 rounded-full border-t-2 border-r-2 border-transparent border-t-[#6366F1] animate-spin" />
         <Sparkles size={16} className="text-[#6366F1] animate-pulse" />
       </div>
       <div className="text-center">
-        <p className="text-[12px] font-semibold text-[#8B949E] tracking-widest uppercase mb-1">AI Agent Active</p>
-        <p className="text-[14px] text-white">Analyzing codebase context...</p>
+        <p className="text-[12px] font-semibold text-[var(--text-secondary)] tracking-widest uppercase mb-1">AI Agent Active</p>
+        <p className="text-[14px] text-[var(--text-primary)]">Analyzing codebase context...</p>
       </div>
     </div>
   )
@@ -47,11 +47,11 @@ function Spinner() {
 
 function Paragraphs({ text }) {
   return (
-    <div className="relative rounded-xl border border-[#1E222A] bg-[#0D0F14] p-6 shadow-2xl overflow-hidden mt-6">
+    <div className="relative rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 shadow-2xl overflow-hidden mt-6">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#6366F1] to-transparent opacity-50" />
       <div className="space-y-4">
         {(text || '').split('\n\n').filter(Boolean).map((p, i) => (
-          <p key={i} className="text-[14px] text-[#C9D1D9] leading-relaxed font-light">{p}</p>
+          <p key={i} className="text-[14px] text-[var(--text-primary)] leading-relaxed font-light">{p}</p>
         ))}
       </div>
     </div>
@@ -60,7 +60,7 @@ function Paragraphs({ text }) {
 
 function PoweredBy() {
   return (
-    <div className="flex items-center gap-1.5 mt-6 text-[11px] font-medium text-[#8B949E] uppercase tracking-widest">
+    <div className="flex items-center gap-1.5 mt-6 text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">
       <Sparkles size={12} className="text-[#6366F1]" />
       Powered by Gemini
     </div>
@@ -90,23 +90,23 @@ function FileSearchInput({ owner, name, onSelect }) {
         placeholder="Search for a file (e.g. src/auth.ts)..."
         value={q}
         onChange={e => setQ(e.target.value)}
-        className="w-full px-4 py-2.5 rounded-lg bg-[#0D0F14] border border-[#1E222A] text-white text-[14px]
-                   placeholder:text-[#8B949E] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all shadow-sm"
+        className="w-full px-4 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-[14px]
+                   placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all shadow-sm"
       />
       {results.length > 0 && (
-        <div className="absolute top-full mt-2 left-0 right-0 z-50 rounded-xl border border-[#1E222A]
-                        bg-[#0D0F14] shadow-2xl overflow-hidden backdrop-blur-md">
+        <div className="absolute top-full mt-2 left-0 right-0 z-50 rounded-xl border border-[var(--border-default)]
+                        bg-[var(--bg-surface)] shadow-2xl overflow-hidden backdrop-blur-md">
           {results.map((r, i) => (
             <button
               key={i}
               onClick={() => { onSelect(r.path); setQ(''); setResults([]) }}
-              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[#161B22] cursor-pointer transition-colors border-b border-[#1E222A] last:border-0 group"
+              className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-[var(--bg-elevated)] cursor-pointer transition-colors border-b border-[var(--border-default)] last:border-0 group"
             >
               <div className="overflow-hidden pr-4">
-                <p className="font-semibold text-white text-[13px] truncate">{r.name}</p>
-                <p className="text-[#8B949E] text-[11px] truncate font-mono mt-0.5">{r.path}</p>
+                <p className="font-semibold text-[var(--text-primary)] text-[13px] truncate">{r.name}</p>
+                <p className="text-[var(--text-secondary)] text-[11px] truncate font-mono mt-0.5">{r.path}</p>
               </div>
-              <ChevronRight size={14} className="text-[#8B949E] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ChevronRight size={14} className="text-[var(--text-secondary)] opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
           ))}
         </div>
@@ -151,28 +151,28 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">Explain File</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Explain File</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Select a file to get a detailed AI explanation of its role, architecture, and potential improvement suggestions.
           </p>
           <div className="space-y-4">
             <FileSearchInput owner={owner} name={name} onSelect={p => { setSelectedPath(p); reset() }} />
             
             {selectedPath && (
-              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[#161B22] border border-[#1E222A]">
-                <div className="flex items-center gap-2 overflow-hidden text-[13px] text-[#8B949E]">
+              <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)]">
+                <div className="flex items-center gap-2 overflow-hidden text-[13px] text-[var(--text-secondary)]">
                   <FileCode2 size={14} className="text-[#6366F1]" />
-                  <span className="font-mono text-white truncate">{selectedPath}</span>
+                  <span className="font-mono text-[var(--text-primary)] truncate">{selectedPath}</span>
                 </div>
-                <button onClick={() => { setSelectedPath(''); reset() }} className="text-[#8B949E] hover:text-white transition-colors cursor-pointer ml-4">✕</button>
+                <button onClick={() => { setSelectedPath(''); reset() }} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer ml-4">✕</button>
               </div>
             )}
 
             <button
               onClick={() => call('explain-file', { filePath: selectedPath })}
               disabled={!selectedPath || isLoading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold
-                         hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold
+                         hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5
                          disabled:opacity-50 disabled:active:scale-100"
             >
               <Sparkles size={14} />
@@ -195,14 +195,14 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">Onboarding Guide</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Onboarding Guide</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Generate a comprehensive Markdown onboarding guide covering the tech stack, code organization, entry points, and data flow.
           </p>
           <button
             onClick={() => call('onboarding-guide')}
             disabled={isLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5 disabled:opacity-50"
           >
             <BookOpen size={14} />
             Generate Complete Guide
@@ -211,23 +211,23 @@ export default function AI() {
 
         {result?.guide && (
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="relative rounded-xl border border-[#1E222A] bg-[#0D0F14] p-8 shadow-2xl overflow-hidden group">
+            <div className="relative rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-8 shadow-2xl overflow-hidden group">
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#6366F1]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
               <div className="flex justify-end mb-4">
                 <button
                   onClick={() => { navigator.clipboard.writeText(result.guide); toast.success('Copied to clipboard!') }}
-                  className="flex items-center gap-1.5 text-[12px] font-medium text-[#8B949E] hover:text-white border border-[#1E222A] bg-[#161B22] rounded-md px-3 py-1.5 transition-colors cursor-pointer"
+                  className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)] bg-[var(--bg-elevated)] rounded-md px-3 py-1.5 transition-colors cursor-pointer"
                 >
                   <Copy size={12} />
                   Copy Markdown
                 </button>
               </div>
               
-              <div className="prose prose-invert prose-sm max-w-none
-                              prose-headings:text-white prose-headings:font-semibold prose-p:text-[#C9D1D9] prose-li:text-[#C9D1D9]
-                              prose-code:text-[#A5B4FC] prose-code:bg-[#161B22] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
-                              prose-pre:bg-[#161B22] prose-pre:border prose-pre:border-[#1E222A] prose-pre:shadow-inner">
+              <div className="prose prose-sm max-w-none dark:prose-invert
+                              prose-headings:text-[var(--text-primary)] prose-headings:font-semibold prose-p:text-[var(--text-primary)] prose-li:text-[var(--text-primary)]
+                              prose-code:text-[#6366F1] prose-code:bg-[var(--bg-elevated)] prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-none prose-code:after:content-none
+                              prose-pre:bg-[var(--bg-elevated)] prose-pre:border prose-pre:border-[var(--border-default)] prose-pre:shadow-inner prose-pre:text-[var(--text-primary)]">
                 <ReactMarkdown>{result.guide}</ReactMarkdown>
               </div>
             </div>
@@ -242,14 +242,14 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">Architecture Analysis</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Architecture Analysis</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Analyze the repository's architectural patterns, identify structural bottlenecks, and receive concrete improvement recommendations.
           </p>
           <button
             onClick={() => call('architecture-summary')}
             disabled={isLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5 disabled:opacity-50"
           >
             <Network size={14} />
             Analyze Architecture
@@ -263,7 +263,7 @@ export default function AI() {
               <PoweredBy />
               <button
                 onClick={() => { navigator.clipboard.writeText(result.summary); toast.success('Copied to clipboard!') }}
-                className="flex items-center gap-1.5 text-[12px] font-medium text-[#8B949E] hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
               >
                 <Copy size={12} />
                 Copy Report
@@ -279,27 +279,27 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
          <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">Pull Request Analyzer</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Pull Request Analyzer</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Scan a Pull Request to understand its intent, blast radius, risk level, and critical areas for reviewers.
           </p>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B949E] font-mono text-[13px]">#</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] font-mono text-[13px]">#</span>
               <input
                 type="number"
                 min="1"
                 placeholder="PR Number"
                 value={prNumber}
                 onChange={e => setPrNumber(e.target.value)}
-                className="w-40 pl-8 pr-4 py-2.5 rounded-lg bg-[#0D0F14] border border-[#1E222A] text-white text-[14px] font-mono
-                           placeholder:text-[#8B949E] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all"
+                className="w-40 pl-8 pr-4 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-[14px] font-mono
+                           placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all"
               />
             </div>
             <button
               onClick={() => call('analyze-pr', { prNumber: parseInt(prNumber) })}
               disabled={!prNumber || isLoading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5 disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5 disabled:opacity-50"
             >
               <GitPullRequest size={14} />
               Scan PR
@@ -333,14 +333,14 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">README Scorer</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">README Scorer</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Evaluate your repository's README.md against industry-standard quality criteria and get actionable improvements.
           </p>
           <button
             onClick={() => call('score-readme')}
             disabled={isLoading}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5 disabled:opacity-50"
           >
             <Star size={14} />
             Evaluate README
@@ -349,7 +349,7 @@ export default function AI() {
 
         {result && (
           <div className="mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-             <div className="rounded-xl border border-[#1E222A] bg-[#0D0F14] p-8 shadow-2xl relative overflow-hidden group">
+             <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-8 shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#6366F1]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               
               <div className="flex flex-col md:flex-row gap-10">
@@ -362,12 +362,12 @@ export default function AI() {
                      <span className={`text-[72px] font-black leading-none bg-clip-text text-transparent bg-gradient-to-br ${gradient}`}>
                        {score}
                      </span>
-                     <span className="text-[20px] font-bold text-[#8B949E]">/100</span>
+                     <span className="text-[20px] font-bold text-[var(--text-secondary)]">/100</span>
                    </div>
                 </div>
 
                 {/* Criteria Column */}
-                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 border-l border-[#1E222A] pl-10">
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 border-l border-[var(--border-default)] pl-10">
                   {Object.entries(result.breakdown || {}).map(([key, val]) => (
                     <div key={key} className="flex items-center gap-3">
                       {val ? (
@@ -379,7 +379,7 @@ export default function AI() {
                           <XCircle size={12} className="text-red-400" />
                         </div>
                       )}
-                      <span className={`text-[13px] font-medium ${val ? 'text-[#C9D1D9]' : 'text-[#8B949E] line-through decoration-[#8B949E]/50'}`}>
+                      <span className={`text-[13px] font-medium ${val ? 'text-[var(--text-primary)]' : 'text-[var(--text-secondary)] line-through opacity-50'}`}>
                         {README_LABELS[key] || key}
                       </span>
                     </div>
@@ -388,13 +388,13 @@ export default function AI() {
               </div>
 
               {result.suggestions?.length > 0 && (
-                <div className="mt-10 pt-8 border-t border-[#1E222A]">
-                  <h4 className="text-[12px] font-bold text-[#8B949E] uppercase tracking-widest mb-4 flex items-center gap-2">
+                <div className="mt-10 pt-8 border-t border-[var(--border-default)]">
+                  <h4 className="text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-4 flex items-center gap-2">
                     <AlertTriangle size={14} className="text-amber-400" /> Improvement Suggestions
                   </h4>
                   <ol className="space-y-3">
                     {result.suggestions.map((s, i) => (
-                      <li key={i} className="text-[14px] text-[#C9D1D9] flex items-start gap-3">
+                      <li key={i} className="text-[14px] text-[var(--text-primary)] flex items-start gap-3">
                         <span className="text-[#6366F1] font-mono mt-0.5">{i + 1}.</span>
                         {s}
                       </li>
@@ -414,27 +414,27 @@ export default function AI() {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
         <div className="max-w-2xl">
-          <h3 className="text-xl font-semibold text-white mb-2">Breaking Changes Detector</h3>
-          <p className="text-[14px] text-[#8B949E] mb-6">
+          <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Breaking Changes Detector</h3>
+          <p className="text-[14px] text-[var(--text-secondary)] mb-6">
             Check a Pull Request for breaking function signature changes and instantly analyze affected callers to prevent regressions.
           </p>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B949E] font-mono text-[13px]">#</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] font-mono text-[13px]">#</span>
               <input
                 type="number"
                 min="1"
                 placeholder="PR Number"
                 value={prNumber}
                 onChange={e => setPrNumber(e.target.value)}
-                className="w-40 pl-8 pr-4 py-2.5 rounded-lg bg-[#0D0F14] border border-[#1E222A] text-white text-[14px] font-mono
-                           placeholder:text-[#8B949E] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all"
+                className="w-40 pl-8 pr-4 py-2.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-default)] text-[var(--text-primary)] text-[14px] font-mono
+                           placeholder:text-[var(--text-secondary)] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1]/30 transition-all"
               />
             </div>
             <button
               onClick={() => call('breaking-changes', { prNumber: parseInt(prNumber) })}
               disabled={!prNumber || isLoading}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold hover:bg-gray-100 transition-all cursor-pointer active:scale-95 shadow-lg shadow-white/5 disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold hover:opacity-90 transition-all cursor-pointer active:scale-95 shadow-lg shadow-black/5 disabled:opacity-50"
             >
               <AlertTriangle size={14} />
               Check PR Safety
@@ -443,8 +443,8 @@ export default function AI() {
         </div>
 
         {isLoading && (
-          <div className="mt-8 text-[13px] text-[#8B949E] flex items-center gap-2">
-            <div className="w-3 h-3 border-2 border-[#1E222A] border-t-[#6366F1] rounded-full animate-spin" />
+          <div className="mt-8 text-[13px] text-[var(--text-secondary)] flex items-center gap-2">
+            <div className="w-3 h-3 border-2 border-[var(--border-default)] border-t-[#6366F1] rounded-full animate-spin" />
             Comparing abstract syntax trees across PR...
           </div>
         )}
@@ -463,7 +463,7 @@ export default function AI() {
                 {result.explanation && <Paragraphs text={result.explanation} />}
                 
                 <div className="space-y-4">
-                  <h4 className="text-[13px] font-bold text-white tracking-wide flex items-center gap-2 border-b border-[#1E222A] pb-2">
+                  <h4 className="text-[13px] font-bold text-[var(--text-primary)] tracking-wide flex items-center gap-2 border-b border-[var(--border-default)] pb-2">
                     <AlertTriangle size={14} className="text-red-400" /> Detected Signature Changes ({result.changes.length})
                   </h4>
                   {result.changes.map((c, i) => {
@@ -472,32 +472,32 @@ export default function AI() {
                                      : c.risk === 'medium' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' 
                                      : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
                     return (
-                      <div key={i} className="rounded-xl border border-[#1E222A] bg-[#0D0F14] overflow-hidden shadow-lg group hover:border-[#2D3342] transition-colors">
+                      <div key={i} className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] overflow-hidden shadow-lg group hover:border-[#6366F1] transition-colors">
                         <div className="p-5">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <span className="font-mono text-[14px] font-semibold text-white bg-[#161B22] px-2 py-0.5 rounded border border-[#2D3342]">{c.functionName}</span>
-                              <p className="text-[12px] text-[#8B949E] mt-2 font-mono flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:border-l before:border-b before:border-[#2D3342] before:-mt-0.5">{c.file}</p>
+                              <span className="font-mono text-[14px] font-semibold text-[var(--text-primary)] bg-[var(--bg-elevated)] px-2 py-0.5 rounded border border-[var(--border-default)]">{c.functionName}</span>
+                              <p className="text-[12px] text-[var(--text-secondary)] mt-2 font-mono flex items-center gap-1.5 before:content-[''] before:w-1.5 before:h-1.5 before:border-l before:border-b before:border-[var(--border-default)] before:-mt-0.5">{c.file}</p>
                             </div>
                             <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full border tracking-widest ${badgeColor}`}>
                               {c.risk}
                             </span>
                           </div>
                           
-                          <div className="font-mono text-[13px] bg-[#050505] p-4 rounded-lg border border-[#1E222A] shadow-inner mb-5">
+                          <div className="font-mono text-[13px] bg-[#0A0D14] p-4 rounded-lg border border-[#1E222A] shadow-inner mb-5">
                             <div className="text-red-400 opacity-80 decoration-red-400/50">- {c.functionName}({c.oldParams.join(', ')})</div>
                             <div className="text-emerald-400 font-semibold mt-1">+ {c.functionName}({c.newParams.join(', ')})</div>
                           </div>
 
-                          <div className="bg-[#161B22] rounded-lg p-4 border border-[#2D3342]">
-                            <p className="text-[12px] font-semibold text-[#8B949E] uppercase tracking-widest mb-3">Downstream Callers ({c.callerFiles.length})</p>
+                          <div className="bg-[var(--bg-elevated)] rounded-lg p-4 border border-[var(--border-default)]">
+                            <p className="text-[12px] font-semibold text-[var(--text-secondary)] uppercase tracking-widest mb-3">Downstream Callers ({c.callerFiles.length})</p>
                             {c.callerFiles.length === 0 ? (
-                               <p className="text-[13px] text-[#8B949E]">No callers found in this repository.</p>
+                               <p className="text-[13px] text-[var(--text-secondary)]">No callers found in this repository.</p>
                             ) : (
                                <div className="flex flex-wrap gap-2 mb-3">
                                 {c.callerFiles.map(cf => (
-                                  <span key={cf} className="px-2.5 py-1 bg-[#0D0F14] border border-[#1E222A] text-[11px] text-[#C9D1D9] rounded-md font-mono flex items-center gap-1.5">
-                                    <FileCode2 size={10} className="text-[#8B949E]" /> {cf}
+                                  <span key={cf} className="px-2.5 py-1 bg-[var(--bg-surface)] border border-[var(--border-default)] text-[11px] text-[var(--text-primary)] rounded-md font-mono flex items-center gap-1.5">
+                                    <FileCode2 size={10} className="text-[var(--text-secondary)]" /> {cf}
                                   </span>
                                 ))}
                               </div>
@@ -536,11 +536,11 @@ export default function AI() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-[#0D0F14] rounded-2xl border border-[#1E222A] overflow-hidden shadow-2xl">
+    <div className="flex h-[calc(100vh-120px)] bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-default)] overflow-hidden shadow-2xl">
       {/* Left sidebar */}
-      <div className="w-64 shrink-0 border-r border-[#1E222A] bg-[#0A0C10] p-4 flex flex-col gap-1.5 overflow-y-auto">
+      <div className="w-64 shrink-0 border-r border-[var(--border-default)] bg-[var(--bg-elevated)] p-4 flex flex-col gap-1.5 overflow-y-auto">
         <div className="mb-4 px-2 mt-2">
-          <p className="text-[11px] font-bold text-[#8B949E] uppercase tracking-widest">AI Assistants</p>
+          <p className="text-[11px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">AI Assistants</p>
         </div>
         {TOOLS.map(({ id, label, Icon }) => {
           const isActive = activeTool === id
@@ -550,14 +550,14 @@ export default function AI() {
               onClick={() => switchTool(id)}
               className={`w-full flex items-center gap-3 rounded-lg py-2.5 px-3 text-[13px] font-medium text-left transition-all cursor-pointer group relative
                 ${isActive
-                  ? 'bg-[#161B22] text-white shadow-sm'
-                  : 'text-[#8B949E] hover:bg-[#161B22]/50 hover:text-[#C9D1D9]'
+                  ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm border border-[var(--border-default)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface)] hover:text-[var(--text-primary)]'
                 }`}
             >
               {isActive && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-[#6366F1] rounded-r-full" />
               )}
-              <Icon size={16} className={`shrink-0 ${isActive ? 'text-[#6366F1]' : 'text-[#8B949E] group-hover:text-[#C9D1D9] transition-colors'}`} />
+              <Icon size={16} className={`shrink-0 ${isActive ? 'text-[#6366F1]' : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors'}`} />
               {label}
             </button>
           )

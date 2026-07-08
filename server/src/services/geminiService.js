@@ -15,7 +15,7 @@ async function callGemini(prompt) {
     return result.response.text();
   } catch (err) {
     console.error('Gemini error:', err.message);
-    return 'Analysis unavailable at this time.';
+    return `AI Analysis Error: ${err.message}`;
   }
 }
 
