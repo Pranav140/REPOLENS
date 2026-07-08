@@ -58,13 +58,33 @@ export default function Login() {
           {/* Ambient Glow behind logo */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-[var(--accent-blue)] rounded-full blur-[80px] opacity-20 pointer-events-none" />
 
-          {/* Logo */}
-          <div className="w-16 h-16 rounded-[20px] flex items-center justify-center mb-8 relative group transform transition-all duration-500 hover:scale-110 hover:shadow-2xl" 
-            style={{ 
-              background: 'linear-gradient(135deg, var(--grad-blue) 0%, #1a0b5c 100%)',
-              boxShadow: '0 10px 30px -10px var(--accent-blue), inset 0 2px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.2)' 
-            }}>
-            <Hexagon size={32} color="white" strokeWidth={2.5} className="relative z-10 drop-shadow-md group-hover:rotate-[15deg] transition-transform duration-500" />
+          {/* Logo Illustration */}
+          <div className="relative mb-8 group">
+            {/* Ambient Backlight */}
+            <div className="absolute inset-0 bg-[#3b82f6] opacity-20 blur-[30px] rounded-full scale-150 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
+            
+            <div 
+              className="w-20 h-20 rounded-[22px] flex items-center justify-center relative overflow-hidden transition-transform duration-500 group-hover:-translate-y-1"
+              style={{
+                background: 'linear-gradient(180deg, #111827 0%, #0D111A 100%)',
+                boxShadow: '0 15px 35px -10px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08)',
+                border: '1px solid #1E2A3A'
+              }}
+            >
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                {/* The Lens */}
+                <circle cx="11" cy="11" r="8" className="stroke-slate-300 transition-all duration-300 group-hover:stroke-white" strokeWidth="2" />
+                {/* The Handle */}
+                <line x1="21" y1="21" x2="16.65" y2="16.65" className="stroke-slate-500 group-hover:stroke-slate-300 transition-colors duration-300" strokeWidth="2.5" />
+                
+                {/* Inner Code / Git Node */}
+                <g className="transition-transform duration-500 origin-[11px_11px] group-hover:scale-110">
+                  <circle cx="11" cy="11" r="2.5" fill="#3b82f6" stroke="none" />
+                  <line x1="5" y1="11" x2="8.5" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+                  <line x1="13.5" y1="11" x2="17" y2="11" stroke="#3b82f6" strokeWidth="1.5" />
+                </g>
+              </svg>
+            </div>
           </div>
 
           <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-br from-white to-gray-400 mb-4 tracking-tight">RepoLens</h1>
