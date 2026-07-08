@@ -7,6 +7,7 @@ import { Alert } from '../../components/ui/alert'
 import { AlertOctagon, ArrowRightLeft, GitBranch } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import api from '../../api/api'
+import { useTheme } from '../../contexts/ThemeContext'
 
 function getStatus(v, good, warn) {
   if (v <= good) return 'good'
@@ -22,19 +23,24 @@ const S = { good: 'text-green-400', warning: 'text-yellow-400', danger: 'text-re
 
 function Card({ children, title, className = '' }) {
   return (
-    <div className={`rounded-2xl bg-[#0a0a0a]/50 backdrop-blur-xl p-6 shadow-sm border border-[#ffffff0a] ${className}`}>
-      {title && <h3 className="text-sm font-semibold text-gray-300 mb-5 uppercase tracking-wider">{title}</h3>}
+    <div className={`rounded-2xl p-6 shadow-sm border transition-colors ${className}`} style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+      {title && <h3 className="text-sm font-semibold mb-5 uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{title}</h3>}
       {children}
     </div>
   )
 }
 
-function ScoreRing({ score }) {
+function ScoreRing({ score, theme }) {
   const color = score >= 70 ? '#22c55e' : 
                 score >= 40 ? '#f59e0b' : '#ef4444'
   const radius = 70
   const circ = 2 * Math.PI * radius
   const offset = circ - (score / 100) * circ
+
+  const trackColor = theme === 'dark' ? '#1a1a1a' : 'rgba(49, 120, 198, 0.1)'
+  const tickColor = theme === 'dark' ? '#2a2a2a' : 'rgba(49, 120, 198, 0.15)'
+  const textColor = theme === 'dark' ? '#ffffff' : '#18243A'
+  const textMuted = theme === 'dark' ? '#555555' : '#4A5A72'
 
   return (
     <>
@@ -61,7 +67,7 @@ function ScoreRing({ score }) {
           style={{ animation: 'glowPulse 3s ease-in-out infinite' }}>
           {/* Background track */}
           <circle cx="90" cy="90" r={radius}
-            stroke="#1a1a1a" strokeWidth="10" fill="none"/>
+            stroke={trackColor} strokeWidth="10" fill="none"/>
           {/* Subtle tick marks */}
           {Array.from({ length: 20 }).map((_, i) => {
             const angle = (i / 20) * 2 * Math.PI - Math.PI / 2
@@ -73,7 +79,7 @@ function ScoreRing({ score }) {
                 y1={90 + inner * Math.sin(angle)}
                 x2={90 + outer * Math.cos(angle)}
                 y2={90 + outer * Math.sin(angle)}
-                stroke="#2a2a2a" strokeWidth="1"
+                stroke={tickColor} strokeWidth="1"
               />
             )
           })}
@@ -93,11 +99,11 @@ function ScoreRing({ score }) {
           {/* Score label */}
           <text x="90" y="82" textAnchor="middle"
             fontSize="36" fontWeight="800"
-            fill="white" fontFamily="monospace">
+            fill={textColor} fontFamily="monospace">
             {score}
           </text>
           <text x="90" y="104" textAnchor="middle"
-            fontSize="11" fill="#555" letterSpacing="0.15em">
+            fontSize="11" fill={textMuted} letterSpacing="0.15em">
             HEALTH SCORE
           </text>
         </svg>
@@ -110,7 +116,7 @@ function ScoreRing({ score }) {
             boxShadow: `0 0 6px ${color}`,
             animation: 'glowPulse 2s ease-in-out infinite'
           }}/>
-          <span style={{ color: '#666', fontSize: '12px' }}>
+          <span style={{ color: textMuted, fontSize: '12px' }}>
             {score >= 70 ? 'healthy' : 
              score >= 40 ? 'needs attention' : 'critical'}
           </span>
@@ -122,6 +128,7 @@ function ScoreRing({ score }) {
 
 export default function Health() {
   const { owner, name } = useParams()
+  const { theme } = useTheme()
   const [metrics, setMetrics] = useState(null)
   const [files, setFiles] = useState([])
   const [hotspots, setHotspots] = useState([])
@@ -156,13 +163,13 @@ export default function Health() {
 
   if (loading) return (
     <div className="max-w-[1200px] mx-auto space-y-6 mt-8">
-      <div className="rounded-3xl bg-[#0a0a0a]/30 p-12 flex justify-center animate-pulse">
-        <div className="w-48 h-48 rounded-full border-8 border-[#ffffff05]" />
+      <div className="rounded-3xl p-12 flex justify-center animate-pulse" style={{ background: 'var(--bg-surface)' }}>
+        <div className="w-48 h-48 rounded-full border-8" style={{ borderColor: 'var(--border-default)' }} />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {Array.from({length:6}).map((_,i)=>(
-          <div key={i} className="rounded-2xl bg-[#0a0a0a]/40 p-6 space-y-3">
-            <Skeleton className="h-3 w-20 bg-[#ffffff10]"/><Skeleton className="h-10 w-16 bg-[#ffffff10]"/>
+          <div key={i} className="rounded-2xl p-6 space-y-3" style={{ background: 'var(--bg-surface)' }}>
+            <Skeleton className="h-3 w-20" style={{ background: 'var(--border-default)' }}/><Skeleton className="h-10 w-16" style={{ background: 'var(--border-default)' }}/>
           </div>
         ))}
       </div>
@@ -201,33 +208,36 @@ export default function Health() {
     return 'bg-gradient-to-br from-red-500/5 to-transparent border-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.05)]'
   }
 
+  const textColorClass = theme === 'dark' ? 'text-white' : 'text-[#18243A]'
+  const textMutedClass = theme === 'dark' ? 'text-gray-400' : 'text-[#4A5A72]'
+
   return (
     <div className="max-w-[1200px] mx-auto mt-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
       {/* Header */}
       <div className="text-center space-y-2 mb-10">
-        <h1 className="text-4xl font-bold text-white tracking-tight">Repository Health</h1>
-        <p className="text-gray-400 text-sm max-w-xl mx-auto">An overarching analysis of code quality, structural integrity, and architectural coupling across your codebase.</p>
+        <h1 className={`text-4xl font-bold tracking-tight ${textColorClass}`}>Repository Health</h1>
+        <p className={`text-sm max-w-xl mx-auto ${textMutedClass}`}>An overarching analysis of code quality, structural integrity, and architectural coupling across your codebase.</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Main Score Hero */}
-        <div className="md:w-1/3 rounded-3xl bg-[#0a0a0a]/50 backdrop-blur-xl border border-[#ffffff0a] flex items-center justify-center py-10 shadow-lg relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#ffffff02] to-transparent pointer-events-none" />
+        <div className="md:w-1/3 rounded-3xl backdrop-blur-xl border flex items-center justify-center py-10 shadow-lg relative overflow-hidden group" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
           <div className="relative z-10 transition-transform duration-500 group-hover:scale-105">
-            <ScoreRing score={metrics.healthScore??0} />
+            <ScoreRing score={metrics.healthScore??0} theme={theme} />
           </div>
         </div>
 
         {/* Metrics Grid */}
         <div className="md:w-2/3 grid grid-cols-2 md:grid-cols-3 gap-4">
           {cards.map(c=>(
-            <div key={c.label} className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg backdrop-blur-sm ${getCardStyle(c.status)}`}>
+            <div key={c.label} className={`rounded-2xl border p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-lg backdrop-blur-sm ${getCardStyle(c.status)}`} style={{ background: 'var(--bg-surface)' }}>
               <div>
-                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-2">{c.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text-muted)' }}>{c.label}</p>
                 <p className={`text-4xl font-black tracking-tighter ${S[c.status]}`}>{c.v}</p>
               </div>
-              <p className="text-[11px] text-gray-500 mt-4 leading-snug">{c.desc}</p>
+              <p className="text-[11px] mt-4 leading-snug" style={{ color: 'var(--text-secondary)' }}>{c.desc}</p>
             </div>
           ))}
         </div>
@@ -247,9 +257,14 @@ export default function Health() {
             <XAxis dataKey="range" tick={{fill:'#6b7280',fontSize:12}} axisLine={false} tickLine={false} dy={10}/>
             <YAxis tick={{fill:'#6b7280',fontSize:12}} axisLine={false} tickLine={false}/>
             <Tooltip 
-              cursor={{fill:'rgba(255,255,255,0.02)'}}
-              contentStyle={{background:'#0a0a0a',border:'1px solid #ffffff10',borderRadius:'12px',boxShadow:'0 8px 32px rgba(0,0,0,0.5)'}}
-              labelStyle={{color:'#fff', fontWeight: 'bold'}} 
+              cursor={{fill: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)'}}
+              contentStyle={{
+                background: theme === 'dark' ? '#0a0a0a' : '#ffffff',
+                border: `1px solid ${theme === 'dark' ? '#ffffff10' : 'rgba(0,0,0,0.1)'}`,
+                borderRadius: '12px',
+                boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.08)'
+              }}
+              labelStyle={{color: theme === 'dark' ? '#fff' : '#18243A', fontWeight: 'bold'}} 
               itemStyle={{color:'#00cffc'}}
             />
             <Bar dataKey="count" fill="url(#colorCount)" radius={[6,6,0,0]} barSize={40} />
@@ -258,14 +273,14 @@ export default function Health() {
       </Card>
 
       <Card title="Architectural Hotspots">
-        <div className="rounded-xl overflow-hidden border border-[#ffffff0a] bg-[#050505]/50">
+        <div className="rounded-xl overflow-hidden border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
           <Table>
-            <TableHeader className="bg-[#ffffff05]">
-              <TableRow className="border-b border-[#ffffff0a] hover:bg-transparent">
-                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase h-10">File Path</TableHead>
-                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10">Imported By</TableHead>
-                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10">Complexity</TableHead>
-                <TableHead className="text-gray-400 font-semibold tracking-wider text-[10px] uppercase text-right w-24 h-10">Type</TableHead>
+            <TableHeader style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(49, 120, 198, 0.04)' }}>
+              <TableRow className="border-b hover:bg-transparent" style={{ borderColor: 'var(--border-default)' }}>
+                <TableHead className="font-semibold tracking-wider text-[10px] uppercase h-10" style={{ color: 'var(--text-secondary)' }}>File Path</TableHead>
+                <TableHead className="font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10" style={{ color: 'var(--text-secondary)' }}>Imported By</TableHead>
+                <TableHead className="font-semibold tracking-wider text-[10px] uppercase text-right w-32 h-10" style={{ color: 'var(--text-secondary)' }}>Complexity</TableHead>
+                <TableHead className="font-semibold tracking-wider text-[10px] uppercase text-right w-24 h-10" style={{ color: 'var(--text-secondary)' }}>Type</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,12 +290,12 @@ export default function Health() {
                   ? <span className="text-[10px] px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 uppercase tracking-wider font-bold">Entry</span>
                   : fm?.isDead
                     ? <span className="text-[10px] px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/20 uppercase tracking-wider font-bold">Dead</span>
-                    : <span className="text-[10px] px-2.5 py-1 rounded-md bg-[#ffffff05] text-gray-400 border border-[#ffffff10] uppercase tracking-wider font-bold">Module</span>
+                    : <span className="text-[10px] px-2.5 py-1 rounded-md border uppercase tracking-wider font-bold" style={{ background: theme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(49, 120, 198, 0.05)', color: 'var(--text-muted)', borderColor: 'var(--border-default)' }}>Module</span>
                 return (
-                  <TableRow key={h.path} className="border-b border-[#ffffff05] hover:bg-[#ffffff05] text-sm transition-colors cursor-default">
-                    <TableCell className="font-mono text-[11px] text-gray-300 max-w-xs truncate py-3">{h.path}</TableCell>
-                    <TableCell className="text-right text-white font-medium py-3">{h.importedByCount}</TableCell>
-                    <TableCell className="text-right text-gray-400 py-3">{h.complexityScore}</TableCell>
+                  <TableRow key={h.path} className="border-b text-sm transition-colors cursor-default" style={{ borderColor: 'var(--border-default)' }}>
+                    <TableCell className="font-mono text-[11px] max-w-xs truncate py-3" style={{ color: 'var(--text-secondary)' }}>{h.path}</TableCell>
+                    <TableCell className="text-right font-medium py-3" style={{ color: 'var(--text-primary)' }}>{h.importedByCount}</TableCell>
+                    <TableCell className="text-right py-3" style={{ color: 'var(--text-secondary)' }}>{h.complexityScore}</TableCell>
                     <TableCell className="text-right py-3">{badge}</TableCell>
                   </TableRow>
                 )
@@ -294,13 +309,13 @@ export default function Health() {
       {/* SECTION 5 — Structural Refactor Suggestions */}
       <Card title="Structural Insights">
         {!refactorFindings ? (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-gradient-to-r from-[#ffffff05] to-transparent rounded-2xl border border-[#ffffff0a] gap-4 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 bg-gradient-to-r rounded-2xl border gap-4 relative overflow-hidden" style={{ borderColor: 'var(--border-default)', backgroundImage: theme === 'dark' ? 'linear-gradient(to right, rgba(255,255,255,0.05), transparent)' : 'linear-gradient(to right, rgba(49, 120, 198, 0.05), transparent)' }}>
             <div className="absolute top-0 right-0 p-8 opacity-10">
               <GitBranch size={80} />
             </div>
             <div className="z-10">
-              <h4 className="text-white font-medium mb-1">Deep Structural Analysis</h4>
-              <p className="text-sm text-gray-400">Detect architectural anti-patterns like god files, feature envy, and isolated clusters.</p>
+              <h4 className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>Deep Structural Analysis</h4>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Detect architectural anti-patterns like god files, feature envy, and isolated clusters.</p>
             </div>
             <button
               onClick={async () => {
@@ -328,23 +343,23 @@ export default function Health() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <AlertOctagon size={16} className="text-orange-500" />
-                  <h4 className="text-sm font-semibold text-white">God Files</h4>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>God Files</h4>
                 </div>
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-[#222] hover:bg-transparent">
-                      <TableHead className="text-gray-500">File</TableHead>
-                      <TableHead className="text-gray-500 text-right">Imported By</TableHead>
-                      <TableHead className="text-gray-500 text-right">Imports</TableHead>
-                      <TableHead className="text-gray-500 text-right">Total Coupling</TableHead>
+                    <TableRow className="hover:bg-transparent" style={{ borderColor: 'var(--border-default)' }}>
+                      <TableHead style={{ color: 'var(--text-muted)' }}>File</TableHead>
+                      <TableHead className="text-right" style={{ color: 'var(--text-muted)' }}>Imported By</TableHead>
+                      <TableHead className="text-right" style={{ color: 'var(--text-muted)' }}>Imports</TableHead>
+                      <TableHead className="text-right" style={{ color: 'var(--text-muted)' }}>Total Coupling</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {refactorFindings.godFiles.map(g => (
-                      <TableRow key={g.path} className="border-[#222] hover:bg-[#161616] text-sm">
-                        <TableCell className="font-mono text-xs text-gray-300 truncate max-w-xs">{g.path}</TableCell>
-                        <TableCell className="text-right text-gray-400">{g.inDegree}</TableCell>
-                        <TableCell className="text-right text-gray-400">{g.outDegree}</TableCell>
+                      <TableRow key={g.path} className="text-sm" style={{ borderColor: 'var(--border-default)' }}>
+                        <TableCell className="font-mono text-xs truncate max-w-xs" style={{ color: 'var(--text-secondary)' }}>{g.path}</TableCell>
+                        <TableCell className="text-right" style={{ color: 'var(--text-secondary)' }}>{g.inDegree}</TableCell>
+                        <TableCell className="text-right" style={{ color: 'var(--text-secondary)' }}>{g.outDegree}</TableCell>
                         <TableCell className="text-right font-bold text-orange-400">{g.totalCoupling}</TableCell>
                       </TableRow>
                     ))}
@@ -357,13 +372,13 @@ export default function Health() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <ArrowRightLeft size={16} className="text-blue-400" />
-                  <h4 className="text-sm font-semibold text-white">Feature Envy</h4>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Feature Envy</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {refactorFindings.featureEnvy.map(f => (
-                    <div key={f.path} className="p-3 bg-[#161616] border border-[#222] rounded-lg">
-                      <p className="text-xs text-gray-300">
-                        <span className="font-mono text-white">{f.path}</span> lives in <span className="font-mono text-blue-300">{f.nativeFolder}</span> but <span className="font-bold text-orange-400">{f.enviousPercent}%</span> of its imports go to <span className="font-mono text-blue-300">{f.dominantFolder}</span>
+                    <div key={f.path} className="p-3 border rounded-lg" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <span className="font-mono" style={{ color: 'var(--text-primary)' }}>{f.path}</span> lives in <span className="font-mono text-blue-300">{f.nativeFolder}</span> but <span className="font-bold text-orange-400">{f.enviousPercent}%</span> of its imports go to <span className="font-mono text-blue-300">{f.dominantFolder}</span>
                       </p>
                     </div>
                   ))}
@@ -375,17 +390,17 @@ export default function Health() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <GitBranch size={16} className="text-purple-400" />
-                  <h4 className="text-sm font-semibold text-white">Isolated Clusters</h4>
+                  <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Isolated Clusters</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {refactorFindings.orphanedClusters.map((c, i) => (
-                    <div key={i} className="p-4 bg-[#161616] border border-[#222] rounded-lg space-y-3">
+                    <div key={i} className="p-4 border rounded-lg space-y-3" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
                       <div className="flex flex-wrap gap-1.5">
                         {c.nodes.map(n => (
-                          <span key={n} className="px-2 py-0.5 bg-[#222] text-xs text-gray-400 rounded-full font-mono">{n}</span>
+                          <span key={n} className="px-2 py-0.5 text-xs rounded-full font-mono" style={{ background: 'var(--border-default)', color: 'var(--text-secondary)' }}>{n}</span>
                         ))}
                       </div>
-                      <p className="text-xs text-gray-500">{c.externalConnections} connections to rest of codebase</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{c.externalConnections} connections to rest of codebase</p>
                     </div>
                   ))}
                 </div>
@@ -393,10 +408,10 @@ export default function Health() {
             )}
 
             {(refactorFindings.godFiles?.length > 0 || refactorFindings.featureEnvy?.length > 0 || refactorFindings.orphanedClusters?.length > 0) && (
-              <div className="pt-4 border-t border-[#222]">
+              <div className="pt-4 border-t" style={{ borderColor: 'var(--border-default)' }}>
                 {!refactorExplanation ? (
-                  <div className="flex items-center justify-between bg-[#161616] p-4 rounded-lg border border-[#333]">
-                    <span className="text-sm text-gray-300">Get specific refactor recommendations</span>
+                  <div className="flex items-center justify-between p-4 rounded-lg border" style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-default)' }}>
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Get specific refactor recommendations</span>
                     <button
                       onClick={async () => {
                         setExplanationLoading(true)
@@ -408,17 +423,18 @@ export default function Health() {
                         } finally { setExplanationLoading(false) }
                       }}
                       disabled={explanationLoading}
-                      className="px-4 py-2 rounded-lg bg-[#222] hover:bg-[#333] text-sm text-white transition-colors disabled:opacity-50 cursor-pointer"
+                      className="px-4 py-2 rounded-lg text-sm transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{ background: 'var(--border-default)', color: 'var(--text-primary)' }}
                     >
                       {explanationLoading ? 'Gemini is thinking...' : 'Explain These Findings'}
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-2 p-5 bg-[#0a0a0a] rounded-lg border border-[#222]">
-                    <div className="prose prose-invert prose-sm max-w-none text-gray-300 prose-headings:text-white prose-p:text-gray-300">
+                  <div className="space-y-2 p-5 rounded-lg border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-default)' }}>
+                    <div className="prose prose-sm max-w-none" style={{ color: 'var(--text-secondary)' }}>
                       <ReactMarkdown>{refactorExplanation}</ReactMarkdown>
                     </div>
-                    <p className="text-xs text-gray-600 mt-4">Powered by Gemini ✦</p>
+                    <p className="text-xs mt-4" style={{ color: 'var(--text-muted)' }}>Powered by Gemini ✦</p>
                   </div>
                 )}
               </div>
