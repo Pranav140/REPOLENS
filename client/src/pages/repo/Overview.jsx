@@ -39,19 +39,19 @@ function useCountUp(target, duration = 1200) {
 
 // ─── Constants ─────────────────────────────────────────────────
 const getC = (theme) => ({
-  neon: theme === 'dark' ? '#00FF26' : '#3178C6',
-  lime: theme === 'dark' ? '#BBE663' : '#05CD99',
-  dark: theme === 'dark' ? '#0A0C10' : '#F4F7FC',
-  cardBg: theme === 'dark' ? 'rgba(18, 22, 30, 0.85)' : 'rgba(255, 255, 255, 0.9)',
-  panel: theme === 'dark' ? '#12161E' : '#FFFFFF',
-  slate: theme === 'dark' ? '#191919' : '#F8FAFC',
-  white: theme === 'dark' ? '#FFFFFF' : '#0F172A',
-  muted: theme === 'dark' ? '#6B7280' : '#64748B',
-  border: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
-  blast1: theme === 'dark' ? '#12161E' : '#F8FAFC',
-  blast2: theme === 'dark' ? '#1A1F2B' : '#F1F5F9',
-  blast3: theme === 'dark' ? '#252B38' : '#E2E8F0',
-  blast4: theme === 'dark' ? '#3A4255' : '#CBD5E1',
+  neon:   theme === 'dark' ? '#00FF26'  : '#3178C6',
+  lime:   theme === 'dark' ? '#BBE663'  : '#12A37A',
+  dark:   theme === 'dark' ? '#0A0C10'  : '#D6DAE6',
+  cardBg: theme === 'dark' ? 'rgba(18, 22, 30, 0.85)' : 'rgba(224, 228, 239, 0.95)',
+  panel:  theme === 'dark' ? '#12161E'  : '#E0E4EF',
+  slate:  theme === 'dark' ? '#191919'  : '#CDD2E0',
+  white:  theme === 'dark' ? '#FFFFFF'  : '#18243A',
+  muted:  theme === 'dark' ? '#6B7280'  : '#4A5A72',
+  border: theme === 'dark' ? 'rgba(255,255,255,0.07)' : 'rgba(49,120,198,0.14)',
+  blast1: theme === 'dark' ? '#12161E'  : '#E0E4EF',
+  blast2: theme === 'dark' ? '#1A1F2B'  : '#D0D5E6',
+  blast3: theme === 'dark' ? '#252B38'  : '#C0C7D8',
+  blast4: theme === 'dark' ? '#3A4255'  : '#AAB2C8',
 })
 
 const getLangBarColors = (theme) => [getC(theme).neon, getC(theme).lime, '#6B7280', '#F59E0B', '#818CF8', '#EC4899']

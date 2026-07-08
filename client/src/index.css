@@ -11,11 +11,11 @@
 @layer base {
   /* LIGHT THEME — Slate-blue tinted, easy on eyes, resonant with dark mode */
   :root {
-    /* Backgrounds — cool blue-gray tints, never pure white */
-    --bg-base:     #ECEEF3;   /* soft slate, like Linear's light bg */
-    --bg-surface:  #F5F6FA;   /* card surfaces — off-white with blue tint */
-    --bg-elevated: #FAFBFD;   /* modals, tooltips */
-    --bg-overlay:  #F5F6FA;
+    /* Backgrounds — rich slate-blue tint, never white */
+    --bg-base:     #D6DAE6;   /* clear cool-gray, comfortable to look at */
+    --bg-surface:  #E0E4EF;   /* card surfaces — visibly tinted */
+    --bg-elevated: #E8EBF5;   /* modals, tooltips */
+    --bg-overlay:  #E0E4EF;
 
     /* Borders — subtle slate, not harsh gray */
     --border-subtle:  rgba(49, 120, 198, 0.07);

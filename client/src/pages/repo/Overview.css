@@ -206,25 +206,77 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Light mode overrides */
+/* ── Light mode overrides ─────────────────────────────────────────── */
 [data-theme="light"] .rl-overview {
-  background: #F0F2F5;
+  background: var(--bg-base, #D6DAE6);
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(49, 120, 198, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(49, 120, 198, 0.04) 1px, transparent 1px);
   background-size: 32px 32px;
 }
 
 [data-theme="light"] .rl-card {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.07);
+  background: var(--bg-surface, #E0E4EF);
+  border: 1px solid rgba(49, 120, 198, 0.14);
+  box-shadow: 0 2px 10px rgba(24, 36, 58, 0.07);
+}
+
+[data-theme="light"] .rl-card::before {
+  background: linear-gradient(90deg, transparent, rgba(49, 120, 198, 0.3), transparent);
+}
+
+[data-theme="light"] .rl-card:hover {
+  border-color: rgba(49, 120, 198, 0.3);
+  box-shadow: 0 0 24px rgba(49, 120, 198, 0.09), 0 12px 40px rgba(24, 36, 58, 0.10);
+  transform: translateY(-2px);
 }
 
 [data-theme="light"] .rl-kpi-number {
-  color: #0D0F14;
+  color: #18243A;
+}
+
+[data-theme="light"] .rl-section-label {
+  color: #4A5A72;
+}
+
+[data-theme="light"] .rl-badge-green {
+  background: rgba(18, 163, 122, 0.10);
+  color: #0D8762;
+  border: 1px solid rgba(18, 163, 122, 0.22);
+}
+
+[data-theme="light"] .rl-badge-lime {
+  background: rgba(49, 120, 198, 0.10);
+  color: #1E5FAF;
+  border: 1px solid rgba(49, 120, 198, 0.22);
+}
+
+[data-theme="light"] .rl-badge-gray {
+  background: rgba(24, 36, 58, 0.07);
+  color: #4A5A72;
+  border: 1px solid rgba(24, 36, 58, 0.12);
 }
 
 [data-theme="light"] .rl-stat-box {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(0, 0, 0, 0.07);
+  background: rgba(49, 120, 198, 0.05);
+  border: 1px solid rgba(49, 120, 198, 0.13);
+}
+
+[data-theme="light"] .rl-lang-bar-track {
+  background: rgba(49, 120, 198, 0.09);
+}
+
+[data-theme="light"] .rl-timeline-line {
+  background: linear-gradient(to bottom, rgba(49, 120, 198, 0.35), rgba(49, 120, 198, 0.05));
+}
+
+[data-theme="light"] .rl-pulse-dot {
+  background: #3178C6;
+  animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+  0% { box-shadow: 0 0 0 0 rgba(49, 120, 198, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(49, 120, 198, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(49, 120, 198, 0); }
 }
