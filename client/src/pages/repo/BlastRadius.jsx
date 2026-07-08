@@ -110,7 +110,7 @@ export default function BlastRadius() {
     if (active && payload && payload.length) {
       const data = payload[0].payload
       return (
-        <div className="bg-[#0A0C10]/95 backdrop-blur-md border border-[var(--border-default)] p-3 rounded-lg shadow-2xl max-w-[250px]">
+        <div className={`${theme === 'dark' ? 'bg-[#0A0C10]/95' : 'bg-white/95'} backdrop-blur-md border border-[var(--border-default)] p-3 rounded-lg shadow-2xl max-w-[250px]`}>
           <p className="text-sm font-mono text-[var(--text-primary)] truncate mb-1">{data.name}</p>
           <p className="text-xs text-[var(--text-secondary)]">Impact: <span className="text-[var(--text-primary)] font-bold">{data.x}</span> deps</p>
           <p className="text-xs text-[var(--text-secondary)]">Volatility: <span className="text-[var(--text-primary)] font-bold">{data.commits}</span> commits</p>
@@ -159,21 +159,21 @@ export default function BlastRadius() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h2 className="text-[28px] font-semibold text-white tracking-tight leading-none">
+            <h2 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
               Blast Radius
             </h2>
             <span className="px-2.5 py-0.5 rounded-full border border-[#2D3342] bg-[#161B22] text-[11px] font-medium text-[#8B949E] tracking-wide">
               BETA
             </span>
           </div>
-          <p className="text-[14px] text-[#8B949E] max-w-xl">
+          <p className="text-[14px] text-[var(--text-secondary)] max-w-xl">
             Analyze architectural coupling and structural volatility to identify the most dangerous files to modify.
           </p>
         </div>
         <button
           onClick={fetchBlastRadius}
           disabled={isLoading}
-          className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white text-black text-[13px] font-semibold transition-all active:scale-95 hover:bg-gray-100 disabled:opacity-50 disabled:active:scale-100"
+          className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[var(--text-primary)] text-[var(--bg-surface)] text-[13px] font-semibold transition-all active:scale-95 hover:opacity-90 disabled:opacity-50 disabled:active:scale-100"
         >
           <BarChart2 size={16} />
           Run Analysis
