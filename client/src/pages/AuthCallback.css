@@ -131,6 +131,39 @@
   letter-spacing: 0.04em;
   margin: 0;
   font-family: 'Courier New', monospace;
+  transition: color 0.4s ease;
+}
+
+/* Success state title */
+.ac-title-done {
+  background: linear-gradient(135deg, #00ff26 0%, #6ad2ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Redirect progress bar */
+.ac-redirect-bar {
+  margin-top: 14px;
+  width: 200px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(0,255,38,0.12);
+  overflow: hidden;
+}
+
+.ac-redirect-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00ff26, #6ad2ff);
+  border-radius: 2px;
+  animation: redirectProgress 3.5s cubic-bezier(0.4,0,0.2,1) forwards;
+  box-shadow: 0 0 6px rgba(0,255,38,0.6);
+}
+
+@keyframes redirectProgress {
+  0%   { width: 0%; }
+  100% { width: 100%; }
 }
 
 /* ── Step list ── */

@@ -131,14 +131,15 @@ function GridBackground() {
 export default function AuthCallback() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const [error, setError] = useState(null)
+  const [error, setError]   = useState(null)
   const [stepIdx, setStepIdx] = useState(0)
+  const [done, setDone]     = useState(false)
 
-  // Cycle through steps while loading
+  // Advance steps every 800ms so all 4 fill in ~3.2 s
   useEffect(() => {
     const iv = setInterval(() => {
       setStepIdx(i => (i < STEPS.length - 1 ? i + 1 : i))
-    }, 900)
+    }, 800)
     return () => clearInterval(iv)
   }, [])
 
@@ -153,7 +154,10 @@ export default function AuthCallback() {
         const { token, user } = res.data
         localStorage.setItem('repolens_token', token)
         localStorage.setItem('repolens_user', JSON.stringify(user))
-        navigate('/dashboard')
+        // Show all steps as done, flash success, then redirect after 3.5 s total
+        setStepIdx(STEPS.length - 1)
+        setDone(true)
+        setTimeout(() => navigate('/dashboard'), 3500)
       })
       .catch(err => {
         setError(err.response?.data?.message || 'Authentication failed. Please try again.')
@@ -193,22 +197,31 @@ export default function AuthCallback() {
 
         {/* Text block */}
         <div className="ac-text-block">
-          <h2 className="ac-title">Authenticating</h2>
-          <p className="ac-subtitle">GitHub OAuth · Secure handshake in progress</p>
+          <h2 className={`ac-title ${done ? 'ac-title-done' : ''}`}>
+            {done ? 'Connected!' : 'Authenticating'}
+          </h2>
+          <p className="ac-subtitle">
+            {done ? 'Redirecting to your dashboard…' : 'GitHub OAuth · Secure handshake in progress'}
+          </p>
+          {done && <div className="ac-redirect-bar"><div className="ac-redirect-fill" /></div>}
         </div>
 
         {/* Step progress */}
         <div className="ac-steps">
-          {STEPS.map((s, i) => (
-            <div
-              key={s.id}
-              className={`ac-step ${i < stepIdx ? 'done' : ''} ${i === stepIdx ? 'active' : ''}`}
-            >
-              <span className="ac-step-icon">{i < stepIdx ? '✓' : s.icon}</span>
-              <span className="ac-step-label">{s.label}</span>
-              {i === stepIdx && <span className="ac-step-spinner" />}
-            </div>
-          ))}
+          {STEPS.map((s, i) => {
+            const isDone   = done || i < stepIdx
+            const isActive = !done && i === stepIdx
+            return (
+              <div
+                key={s.id}
+                className={`ac-step ${isDone ? 'done' : ''} ${isActive ? 'active' : ''}`}
+              >
+                <span className="ac-step-icon">{isDone ? '✓' : s.icon}</span>
+                <span className="ac-step-label">{s.label}</span>
+                {isActive && <span className="ac-step-spinner" />}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
